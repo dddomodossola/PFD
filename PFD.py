@@ -25,6 +25,25 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
         #considering an Attitude Indicator 200x200, measures are in parts of 1
 
+        #roll and bank indicator
+        self.group_roll_and_bank_angle_indicator = gui.SvgGroup()
+        self.roll_indicator = gui.SvgPolygon(3)
+        self.roll_indicator.set_fill('transparent')
+        self.roll_indicator.set_stroke(1, 'black')
+        self.roll_indicator.add_coord(-0.04, -0.44)
+        self.roll_indicator.add_coord(0.0, -0.44 - 0.03)
+        self.roll_indicator.add_coord(0.04, -0.44)
+        self.group_roll_and_bank_angle_indicator.append(self.roll_indicator)
+        self.bank_indicator = gui.SvgPolygon(4)
+        self.bank_indicator.set_fill('transparent')
+        self.bank_indicator.set_stroke(1, 'black')
+        self.bank_indicator.add_coord(-0.04, -0.44)
+        self.bank_indicator.add_coord(0.04, -0.44)
+        self.bank_indicator.add_coord(0.04, -0.44 + 0.02)
+        self.bank_indicator.add_coord(-0.04, -0.44 + 0.02)
+        self.group_roll_and_bank_angle_indicator.append(self.bank_indicator)
+        self.group_roll.append(self.group_roll_and_bank_angle_indicator)
+
         #horizon
         #background is static and occupy the entire attidute indicator
         self.horizon_background = gui.SvgRectangle(-0.5, -0.5, 1, 1)
