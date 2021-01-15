@@ -3,14 +3,17 @@
 
 from remi import gui
 from remi import start, App
-
+import math
 
 class AttitudeIndicator(gui.SvgSubcontainer):
+    pitch = 0
+    orientation = 0
+    roll = 0
+
     def __init__(self, *args, **kwargs):
         gui.SvgSubcontainer.__init__(self, -0.5, -0.5, 1, 1, *args, **kwargs)
 
         self.attr_viewBox = "-0.5 -0.5 1.0 1.0"
-
         
         self.group_pitch = gui.SvgGroup()
         self.group_pitch.css_transform = "rotate(0deg), translate(0, 0)"
@@ -20,7 +23,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.group_roll = gui.SvgGroup()
         self.group_roll.css_transform = "rotate(0deg), translate(0, 0)"
         self.group_roll.css_transform_box = "fill-box"
-        self.group_roll.css_transform_origin = "center"
+        self.group_roll.css_transform_origin = "50% 19%"
         self.group_roll.append(self.group_pitch)
 
         #considering an Attitude Indicator 200x200, measures are in parts of 1
@@ -55,7 +58,38 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.horizon_terrain.set_stroke(0.01, "lightgray")
         self.group_pitch.append(self.horizon_terrain)
 
+
+        #pitch angle indication
+        min_sign_width = 0.2
+        mid_sign_width = 0.3
+        max_sign_width = 0.5
+        index = 0
+        sign_y_offset = 0.1
+        angle_step = 10
+        n_step = 10
+        for step in range(int(-n_step/2), int(n_step/2)):
+            sign_size = [min_sign_width, mid_sign_width, max_sign_width][index%3]
+            index += 1
+            line = gui.SvgLine(-sign_size/2, step*sign_y_offset, sign_size/2, step*sign_y_offset)
+            line.set_stroke(0.01, 'white')
+            self.group_pitch.append(line)
+
+
         self.append(self.group_roll)
+
+
+        #roll angle indication
+        min_radius = 0.45
+        mid_radius = 0.48
+        max_radius = 0.5
+        n_divisions = 14
+        for step in range(0, n_divisions+1):
+            a = ((180/n_divisions)*step)/180*math.pi
+            r = min_radius if (step%2)==1 else mid_radius
+            line = gui.SvgLine(math.cos(a)*r, -math.sin(a)*r, math.cos(a)*max_radius, -math.sin(a)*max_radius)
+            line.set_stroke(0.01, 'black')
+            self.append(line)
+
 
         #airplaine indicator is steady
         thick = 0.02
@@ -87,8 +121,20 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
         self.append([self.airplane_svg_left, self.airplane_svg_right, self.airplane_svg_center])
 
-    
+    def set_pitch(self, pitch):
+        self.pitch = pitch
         
+    def set_orientation(self, orientation):
+        self.orientation = orientation
+        
+    def set_roll(self, roll):
+        self.roll = roll
+
+    def update_attitude(self):
+        self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, self.pitch)
+        self.group_roll.attributes['transform'] = "rotate(%s 0 0)"%(self.roll)
+        self.horizon_terrain.attributes['transform'] = "translate(0 %s)"%self.pitch
+                
 
 class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
@@ -98,17 +144,26 @@ class PrimaryFlightDisplay(gui.Svg):
         self.append(self.attitude_indicator)
 
     def set_attitude_pitch(self, value):
-        pass
-    def set_attitude_roll(self, value):
-        pass
+        self.attitude_indicator.set_pitch(value)
+
     def set_attitude_orientation(self, value):
-        pass
+        self.attitude_indicator.set_orientation(value)
+
+    def set_attitude_roll(self, value):
+        self.attitude_indicator.set_roll(value)
+
+    def update_attitude(self):
+        self.attitude_indicator.update_attitude()
+
 
 class Application(App):
     def idle(self):
         #idle function called every update cycle
         #self.svg_group.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.rotation, self.movement)
-        pass
+        self.pfd.set_attitude_pitch(float(self.slider_pitch.get_value()))
+        self.pfd.set_attitude_orientation(float(self.slider_orientation.get_value()))
+        self.pfd.set_attitude_roll(float(self.slider_roll.get_value()))
+        self.pfd.update_attitude()
 
     def main(self):
         vbox0 = gui.VBox()
@@ -116,17 +171,20 @@ class Application(App):
         self.pfd = PrimaryFlightDisplay(width=200, height=200)
         vbox0.append(self.pfd)
 
+        self.slider_pitch = gui.SpinBox(0, -1.0, 1.0, 0.01)
+        self.slider_orientation = gui.SpinBox(0, -100, 100, 1)
+        self.slider_roll = gui.SpinBox(0, -100, 100, 1)
+
+        vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch]) )
+        vbox0.append( gui.HBox(children=[gui.Label('orientation'), self.slider_orientation]) )
+        vbox0.append( gui.HBox(children=[gui.Label('roll'), self.slider_roll]) )
+
         return vbox0
     
-    def onchange_slider_rotate(self, emitter, value):
-        self.rotation = value
-
-    def onchange_slider_movement(self, emitter, value):
-        self.movement = value
 
 
 #Configuration
 configuration = {'config_project_name': 'untitled', 'config_address': '0.0.0.0', 'config_port': 8081, 'config_multiple_instance': True, 'config_enable_file_cache': True, 'config_start_browser': True, 'config_resourcepath': './res/'}
 
 if __name__ == "__main__":
-    start(Application, multiple_instance=False, start_browser=True)
+    start(Application, multiple_instance=False, start_browser=True, debug=False)
