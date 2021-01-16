@@ -60,17 +60,16 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
 
         #pitch angle indication
-        min_sign_width = 0.2
-        mid_sign_width = 0.3
-        max_sign_width = 0.5
-        index = 0
-        sign_y_offset = 0.1
-        angle_step = 10
-        n_step = 10
-        for step in range(int(-n_step/2), int(n_step/2)):
-            sign_size = [min_sign_width, mid_sign_width, max_sign_width][index%3]
-            index += 1
-            line = gui.SvgLine(-sign_size/2, step*sign_y_offset, sign_size/2, step*sign_y_offset)
+        s1 = 0.2 #min_sign_width
+        s2 = 0.3 #mid_sign_width
+        s3 = 0.5 #max_sign_width
+        sign_y_offset = 0.03
+        angle_step_list = [30, 27.5, 25, 22.5, 20, 17.5, 15, 12.5, 10, 7.5, 5, 2.5, 0, -2.5, -5, -7.5, -10, -12.5, -15, -17.5, -20, -22.5, -25, -27.5, -30]
+        sign_sizes =      [s3,   s1, s2,   s1, s3,   s1, s2,   s1, s3,  s1, s2, s1, 0,   s1, s2,   s1,  s3,    s1,  s2,    s1,  s3,    s1,  s2,    s1,  s3]        
+        for i in range(0, len(angle_step_list)):
+            angle_step = angle_step_list[i]
+            sign_size = sign_sizes[i]
+            line = gui.SvgLine(-sign_size/2, angle_step*sign_y_offset, sign_size/2, angle_step*sign_y_offset)
             line.set_stroke(0.01, 'white')
             self.group_pitch.append(line)
 
