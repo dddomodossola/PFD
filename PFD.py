@@ -23,7 +23,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.group_roll = gui.SvgGroup()
         self.group_roll.css_transform = "rotate(0deg), translate(0, 0)"
         self.group_roll.css_transform_box = "fill-box"
-        self.group_roll.css_transform_origin = "50% 19%"
+        self.group_roll.css_transform_origin = "50% 20%"
         self.group_roll.append(self.group_pitch)
 
         #considering an Attitude Indicator 200x200, measures are in parts of 1
@@ -63,13 +63,19 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         s1 = 0.2 #min_sign_width
         s2 = 0.3 #mid_sign_width
         s3 = 0.5 #max_sign_width
-        sign_y_offset = 0.03
-        angle_step_list = [30, 27.5, 25, 22.5, 20, 17.5, 15, 12.5, 10, 7.5, 5, 2.5, 0, -2.5, -5, -7.5, -10, -12.5, -15, -17.5, -20, -22.5, -25, -27.5, -30]
-        sign_sizes =      [s3,   s1, s2,   s1, s3,   s1, s2,   s1, s3,  s1, s2, s1, 0,   s1, s2,   s1,  s3,    s1,  s2,    s1,  s3,    s1,  s2,    s1,  s3]        
-        for i in range(0, len(angle_step_list)):
-            angle_step = angle_step_list[i]
-            sign_size = sign_sizes[i]
-            line = gui.SvgLine(-sign_size/2, angle_step*sign_y_offset, sign_size/2, angle_step*sign_y_offset)
+        index = 0
+        radius = 1.0
+        step = 2.5
+        angle_min = -30
+        angle_max = 30
+        sign_sizes = [s3,   s1, s2,   s1]
+        for angle in range(int(angle_min*10), int(angle_max*10), int(step*10)):
+            sign_size = sign_sizes[index%len(sign_sizes)]
+            index += 1
+            angle = angle/10.0
+            if angle == 0:
+                sign_size = 0
+            line = gui.SvgLine(-sign_size/2, math.sin(math.radians(angle))*radius, sign_size/2, math.sin(math.radians(angle))*radius)
             line.set_stroke(0.01, 'white')
             self.group_pitch.append(line)
 
@@ -81,7 +87,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         min_radius = 0.45
         mid_radius = 0.48
         max_radius = 0.5
-        n_divisions = 14
+        n_divisions = 18
         for step in range(0, n_divisions+1):
             a = ((180/n_divisions)*step)/180*math.pi
             r = min_radius if (step%2)==1 else mid_radius
@@ -130,9 +136,9 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.roll = roll
 
     def update_attitude(self):
-        self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, self.pitch)
+        self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, math.sin(math.radians(self.pitch)))
         self.group_roll.attributes['transform'] = "rotate(%s 0 0)"%(self.roll)
-        self.horizon_terrain.attributes['transform'] = "translate(0 %s)"%self.pitch
+        self.horizon_terrain.attributes['transform'] = "translate(0 %s)"%math.sin(math.radians(self.pitch))*1.0
                 
 
 class PrimaryFlightDisplay(gui.Svg):
@@ -170,9 +176,9 @@ class Application(App):
         self.pfd = PrimaryFlightDisplay(width=200, height=200)
         vbox0.append(self.pfd)
 
-        self.slider_pitch = gui.SpinBox(0, -1.0, 1.0, 0.01)
+        self.slider_pitch = gui.SpinBox(0, -30.0, 30.0, 0.01)
         self.slider_orientation = gui.SpinBox(0, -100, 100, 1)
-        self.slider_roll = gui.SpinBox(0, -100, 100, 1)
+        self.slider_roll = gui.SpinBox(0, -90, 90, 1)
 
         vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch]) )
         vbox0.append( gui.HBox(children=[gui.Label('orientation'), self.slider_orientation]) )
