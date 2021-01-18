@@ -60,25 +60,9 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
 
         #pitch angle indication
-        s1 = 0.2 #min_sign_width
-        s2 = 0.3 #mid_sign_width
-        s3 = 0.5 #max_sign_width
-        index = 0
-        radius = 1.0
-        step = 2.5
-        angle_min = -30
-        angle_max = 30
-        sign_sizes = [s3,   s1, s2,   s1]
-        for angle in range(int(angle_min*10), int(angle_max*10), int(step*10)):
-            sign_size = sign_sizes[index%len(sign_sizes)]
-            index += 1
-            angle = angle/10.0
-            if angle == 0:
-                sign_size = 0
-            line = gui.SvgLine(-sign_size/2, math.sin(math.radians(angle))*radius, sign_size/2, math.sin(math.radians(angle))*radius)
-            line.set_stroke(0.01, 'white')
-            self.group_pitch.append(line)
-
+        self.group_pitch_indicator = gui.SvgGroup()
+        self.group_pitch.append(self.group_pitch_indicator)
+        self.generate_pitch_indicator(0)
 
         self.append(self.group_roll)
 
@@ -126,6 +110,44 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
         self.append([self.airplane_svg_left, self.airplane_svg_right, self.airplane_svg_center])
 
+    def generate_pitch_indicator(self, actual_angle):
+        self.group_pitch_indicator.empty()
+        s1 = 0.2 #min_sign_width
+        s2 = 0.3 #mid_sign_width
+        s3 = 0.5 #max_sign_width
+        index = 0
+        radius = 1.0
+        step = 2.5
+        angle_min = -40 - int(actual_angle/10)*10 #/10*10 is to avoid units
+        angle_max = 40 - int(actual_angle/10)*10
+        sign_sizes = [s3,   s1, s2,   s1]
+        for angle in range(int(angle_min*10), int(angle_max*10), int(step*10)):
+            sign_size = sign_sizes[index%len(sign_sizes)]
+            index += 1
+            angle = angle/10.0
+            if angle == 0:
+                sign_size = 0
+            y = math.sin(math.radians(angle+actual_angle))*radius
+            line = gui.SvgLine(-sign_size/2, y, sign_size/2, y)
+            line.set_stroke(0.01, 'white')
+            self.group_pitch_indicator.append(line)
+
+            #if it is a big sign, add also text
+            if sign_size == s3:
+                txt = gui.SvgText(sign_size/2, y, str(abs(int(angle))))
+                txt.attr_dominant_baseline = 'middle'
+                txt.attr_text_anchor = 'start'
+                txt.set_fill('white')
+                txt.css_font_size = '0.05px'
+                self.group_pitch_indicator.append(txt)
+
+                txt = gui.SvgText(-sign_size/2, y, str(abs(int(angle))))
+                txt.attr_dominant_baseline = 'middle'
+                txt.attr_text_anchor = 'end'
+                txt.set_fill('white')
+                txt.css_font_size = '0.05px'
+                self.group_pitch_indicator.append(txt)
+
     def set_pitch(self, pitch):
         self.pitch = pitch
         
@@ -136,9 +158,10 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.roll = roll
 
     def update_attitude(self):
-        self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, math.sin(math.radians(self.pitch)))
+        #self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, math.sin(math.radians(self.pitch)))
+        self.generate_pitch_indicator(self.pitch)
         self.group_roll.attributes['transform'] = "rotate(%s 0 0)"%(self.roll)
-        self.horizon_terrain.attributes['transform'] = "translate(0 %s)"%math.sin(math.radians(self.pitch))*1.0
+        self.horizon_terrain.attributes['transform'] = "translate(0 %s)"%(math.sin(math.radians(self.pitch))*1.0)
                 
 
 class PrimaryFlightDisplay(gui.Svg):
@@ -176,9 +199,9 @@ class Application(App):
         self.pfd = PrimaryFlightDisplay(width=200, height=200)
         vbox0.append(self.pfd)
 
-        self.slider_pitch = gui.SpinBox(0, -30.0, 30.0, 0.01)
+        self.slider_pitch = gui.SpinBox(0, -360.0, 360.0, 0.01)
         self.slider_orientation = gui.SpinBox(0, -100, 100, 1)
-        self.slider_roll = gui.SpinBox(0, -90, 90, 1)
+        self.slider_roll = gui.SpinBox(0, -360, 360, 1)
 
         vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch]) )
         vbox0.append( gui.HBox(children=[gui.Label('orientation'), self.slider_orientation]) )
