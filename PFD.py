@@ -58,11 +58,20 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.horizon_terrain.set_stroke(0.01, "lightgray")
         self.group_pitch.append(self.horizon_terrain)
 
+        self.horizon_terrain = gui.SvgRectangle(-1, -4, 2, 2)
+        self.horizon_terrain.set_fill("rgb(151,53,0)")
+        self.horizon_terrain.set_stroke(0.01, "lightgray")
+        self.group_pitch.append(self.horizon_terrain)
+
+        self.horizon_terrain = gui.SvgRectangle(-1, 4, 2, 2)
+        self.horizon_terrain.set_fill("rgb(151,53,0)")
+        self.horizon_terrain.set_stroke(0.01, "lightgray")
+        self.group_pitch.append(self.horizon_terrain)
 
         #pitch angle indication
         self.group_pitch_indicator = gui.SvgGroup()
         self.group_pitch.append(self.group_pitch_indicator)
-        self.generate_pitch_indicator(0)
+        self.generate_pitch_indicator()
 
         self.append(self.group_roll)
 
@@ -110,7 +119,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
         self.append([self.airplane_svg_left, self.airplane_svg_right, self.airplane_svg_center])
 
-    def generate_pitch_indicator(self, actual_angle):
+    def generate_pitch_indicator(self):
         self.group_pitch_indicator.empty()
         s1 = 0.2 #min_sign_width
         s2 = 0.3 #mid_sign_width
@@ -118,8 +127,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         index = 0
         radius = 1.0
         step = 2.5
-        angle_min = -40 - int(actual_angle/10)*10 #/10*10 is to avoid units
-        angle_max = 40 - int(actual_angle/10)*10
+        angle_min = -400
+        angle_max = 400
         sign_sizes = [s3,   s1, s2,   s1]
         for angle in range(int(angle_min*10), int(angle_max*10), int(step*10)):
             sign_size = sign_sizes[index%len(sign_sizes)]
@@ -127,7 +136,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
             angle = angle/10.0
             if angle == 0:
                 sign_size = 0
-            y = math.sin(math.radians(angle+actual_angle))*radius
+            y = math.sin(math.radians(90.0))/90.0*(angle)*radius
             line = gui.SvgLine(-sign_size/2, y, sign_size/2, y)
             line.set_stroke(0.01, 'white')
             self.group_pitch_indicator.append(line)
@@ -159,9 +168,13 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
     def update_attitude(self):
         #self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, math.sin(math.radians(self.pitch)))
-        self.generate_pitch_indicator(self.pitch)
+        
         self.group_roll.attributes['transform'] = "rotate(%s 0 0)"%(self.roll)
-        self.horizon_terrain.attributes['transform'] = "translate(0 %s)"%(math.sin(math.radians(self.pitch))*1.0)
+        #self.horizon_terrain.attributes['transform'] = "translate(0 %s)"%terrain_position
+        offset = (math.sin(math.radians(90.0))/90.0*self.pitch*1.0)
+        self.group_pitch.attributes['transform'] = "translate(0 %s)"%offset
+        self.group_roll.css_transform_origin = "50% " + "%.2fpx"%((math.sin(math.radians(90.0))/90.0*720.0)/2.0-offset+0.48)
+        print(offset)
                 
 
 class PrimaryFlightDisplay(gui.Svg):
@@ -172,7 +185,7 @@ class PrimaryFlightDisplay(gui.Svg):
         self.append(self.attitude_indicator)
 
     def set_attitude_pitch(self, value):
-        self.attitude_indicator.set_pitch(value)
+        self.attitude_indicator.set_pitch(value%360)
 
     def set_attitude_orientation(self, value):
         self.attitude_indicator.set_orientation(value)
@@ -199,9 +212,9 @@ class Application(App):
         self.pfd = PrimaryFlightDisplay(width=200, height=200)
         vbox0.append(self.pfd)
 
-        self.slider_pitch = gui.SpinBox(0, -360.0, 360.0, 0.01)
+        self.slider_pitch = gui.SpinBox(0, -3600.0, 3600.0, 5.0)
         self.slider_orientation = gui.SpinBox(0, -100, 100, 1)
-        self.slider_roll = gui.SpinBox(0, -360, 360, 1)
+        self.slider_roll = gui.SpinBox(0, -360, 360, 5.0)
 
         vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch]) )
         vbox0.append( gui.HBox(children=[gui.Label('orientation'), self.slider_orientation]) )
