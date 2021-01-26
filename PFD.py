@@ -4,6 +4,7 @@
 from remi import gui
 from remi import start, App
 import math
+from pymavlink import mavutil
 
 class AttitudeIndicator(gui.SvgSubcontainer):
     pitch = 0
@@ -212,9 +213,15 @@ class Application(App):
         self.pfd = PrimaryFlightDisplay(width=200, height=200)
         vbox0.append(self.pfd)
 
-        self.slider_pitch = gui.SpinBox(0, -3600.0, 3600.0, 5.0)
+        self.slider_pitch = gui.SpinBox(0, -3600.0, 3600.0, 0.1)
         self.slider_orientation = gui.SpinBox(0, -100, 100, 1)
-        self.slider_roll = gui.SpinBox(0, -360, 360, 5.0)
+        self.slider_roll = roll = gui.SpinBox(0, -360, 360, 0.1)
+
+        msg = master.recv_match()
+        if msg and msg.get_type() == 'AHRS2':
+            print("pitch ", msg.pitch, " roll ", msg.roll)
+            self.slider_pitch = msg.pitch
+            self.slider_roll = -msg.roll
 
         vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch]) )
         vbox0.append( gui.HBox(children=[gui.Label('orientation'), self.slider_orientation]) )
@@ -226,6 +233,8 @@ class Application(App):
 
 #Configuration
 configuration = {'config_project_name': 'untitled', 'config_address': '0.0.0.0', 'config_port': 8081, 'config_multiple_instance': True, 'config_enable_file_cache': True, 'config_start_browser': True, 'config_resourcepath': './res/'}
+
+master = mavutil.mavlink_connection('udpin:0.0.0.0:14550')
 
 if __name__ == "__main__":
     start(Application, multiple_instance=False, start_browser=True, debug=False)
