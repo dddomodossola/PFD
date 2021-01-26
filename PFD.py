@@ -127,10 +127,10 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         s3 = 0.5 #max_sign_width
         index = 0
         radius = 1.0
-        step = 2.5
-        angle_min = -400
-        angle_max = 400
-        sign_sizes = [s3,   s1, s2,   s1]
+        step = 5
+        angle_min = -90
+        angle_max = 90
+        sign_sizes = [s3,  s2]
         for angle in range(int(angle_min*10), int(angle_max*10), int(step*10)):
             sign_size = sign_sizes[index%len(sign_sizes)]
             index += 1
