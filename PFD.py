@@ -228,4 +228,4 @@ class Application(App):
 configuration = {'config_project_name': 'untitled', 'config_address': '0.0.0.0', 'config_port': 8081, 'config_multiple_instance': True, 'config_enable_file_cache': True, 'config_start_browser': True, 'config_resourcepath': './res/'}
 
 if __name__ == "__main__":
-    start(Application, multiple_instance=False, start_browser=True, debug=False)
+    start(Application, address='0.0.0.0', port=8081, multiple_instance=False, start_browser=True, debug=False)
