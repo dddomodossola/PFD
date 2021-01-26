@@ -237,4 +237,4 @@ configuration = {'config_project_name': 'untitled', 'config_address': '0.0.0.0',
 master = mavutil.mavlink_connection('udpin:0.0.0.0:14550')
 
 if __name__ == "__main__":
-    start(Application, multiple_instance=False, start_browser=True, debug=False)
+    start(Application, address='0.0.0.0', port=8081, multiple_instance=False, start_browser=True, debug=False)
