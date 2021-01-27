@@ -37,7 +37,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.group_horizon_terrain = gui.SvgGroup()
         self.horizon_terrain = gui.SvgRectangle(-1, 0, 2, 2)
         self.horizon_terrain.set_fill("rgb(53, 151, 0)")
-        self.horizon_terrain.set_stroke(0.01, "lightgray")
+        self.horizon_terrain.set_stroke(0.001, "lightgray")
         self.group_horizon_terrain.append(self.horizon_terrain)
         self.append(self.group_horizon_terrain)
 
@@ -285,9 +285,9 @@ class Application(App):
         self.pfd.update_attitude()
 
     def main(self):
-        vbox0 = gui.VBox()
+        vbox0 = gui.VBox(width="100%", height="100%")
 
-        self.pfd = PrimaryFlightDisplay(width=400, height=400)
+        self.pfd = PrimaryFlightDisplay(width="100%", height="100%")
         vbox0.append(self.pfd)
 
         self.slider_pitch = gui.SpinBox(0, -90.0, 90.0, 2.0)
