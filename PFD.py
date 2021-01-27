@@ -53,13 +53,11 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         min_radius = 0.46
         mid_radius = 0.48
         max_radius = 0.5
-        n_divisions = 18
         angle_min = -60
         angle_max = 60
         angle_step = 5
         self.group_roll_indicator = gui.SvgGroup()
         for angle in range(angle_min, angle_max+angle_step, angle_step):
-            ##a = ((180/n_divisions)*step)/180*math.pi
             r = min_radius if (angle%10)==0 else mid_radius
             x_min = math.cos(math.radians(angle+90))*r
             y_min = -math.sin(math.radians(angle+90))*r
@@ -134,6 +132,64 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
         self.append([self.airplane_svg_left, self.airplane_svg_right, self.airplane_svg_center])
 
+        self.generate_orientation_indicator()
+
+    def generate_orientation_indicator(self):
+        self.group_orientation_indicator_with_pointer = gui.SvgGroup()
+        
+        orientation_indicator_y_pos = 0.3
+
+        #orientation angle indication
+        min_radius = 0.3
+        mid_radius = 0.32
+        max_radius = 0.35
+        angle_min = -180
+        angle_max = 180
+        angle_step = 5
+        self.group_orientation_indicator = gui.SvgGroup()
+        labels = {0:'N', -45:'NE', -90:'E', -135:'SE', -180:'S', 180:'S', 135:'SW', 90:'W', 45:'NW'}
+        circle = gui.SvgCircle(0,0, max_radius)
+        circle.set_fill('rgba(0,0,0,0.3)')
+        circle.set_stroke(0.01, 'white')
+        self.group_orientation_indicator.append(circle)
+        for angle in labels.keys():
+            r = min_radius
+            x_min = math.cos(math.radians(angle+90))*r
+            y_min = -math.sin(math.radians(angle+90))*r
+            x_max = math.cos(math.radians(angle+90))*max_radius
+            y_max = -math.sin(math.radians(angle+90))*max_radius
+
+            line = gui.SvgLine(x_min, y_min, x_max, y_max)
+            line.set_stroke(0.01, 'white')
+            self.group_orientation_indicator.append(line)
+
+            x_txt = math.cos(math.radians(angle+90))*(min_radius-0.03)
+            y_txt = -math.sin(math.radians(angle+90))*(min_radius-0.03)
+            txt = gui.SvgText(x_txt, y_txt, labels.get(angle, ''))
+            txt.attr_dominant_baseline = 'middle'
+            txt.attr_text_anchor = 'middle'
+            txt.set_fill('white')
+            txt.css_font_size = '0.07px'
+            txt.css_font_weight = 'bolder'
+            txt.css_transform_origin = '50% 50%'
+            txt.css_transform_box = 'fill-box'
+            txt.attributes['transform'] = 'rotate(%s)'%(-angle)
+            self.group_orientation_indicator.append(txt)
+        self.group_orientation_indicator_with_pointer.append(self.group_orientation_indicator)
+        self.group_orientation_indicator_with_pointer.attributes['transform'] = 'translate(0 %s)'%(max_radius+orientation_indicator_y_pos)
+
+        self.orientation_pointer = gui.SvgPolygon(3)
+        self.orientation_pointer.set_fill('red')
+        self.orientation_pointer.set_stroke(1, 'black')
+        self.orientation_pointer.add_coord(-0.04, -0.06)
+        self.orientation_pointer.add_coord(0.0, 0.0)
+        self.orientation_pointer.add_coord(0.04, -0.06)
+        self.orientation_pointer.attributes['transform'] = 'translate(0 %s)'%(-max_radius)
+        self.group_orientation_indicator_with_pointer.append(self.orientation_pointer)
+
+        self.append(self.group_orientation_indicator_with_pointer)
+
+
     def generate_pitch_indicator(self):
         self.group_pitch_indicator.empty()
         s1 = 0.05 #min_sign_width
@@ -196,7 +252,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.group_pitch.attributes['transform'] = "translate(0 %s)"%offset
         self.group_horizon_terrain.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(-self.roll, (offset*0.4))
         self.group_roll.css_transform_origin = "50%% %.2fpx"%(-offset+0.97)
-                
+        
+        self.group_orientation_indicator.attributes['transform'] = "rotate(%s 0 0)"%(-self.orientation)
 
 class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
@@ -234,7 +291,7 @@ class Application(App):
         vbox0.append(self.pfd)
 
         self.slider_pitch = gui.SpinBox(0, -90.0, 90.0, 2.0)
-        self.slider_orientation = gui.SpinBox(0, -90, 90, 1)
+        self.slider_orientation = gui.SpinBox(0, -180, 180, 2)
         self.slider_roll = gui.SpinBox(0, -90, 90, 2.0)
 
         vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch], width=300) )
