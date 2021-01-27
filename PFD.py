@@ -36,7 +36,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
         self.group_horizon_terrain = gui.SvgGroup()
         self.horizon_terrain = gui.SvgRectangle(-1, 0, 2, 2)
-        self.horizon_terrain.set_fill("rgb(151,53,0)")
+        self.horizon_terrain.set_fill("rgb(53, 151, 0)")
         self.horizon_terrain.set_stroke(0.01, "lightgray")
         self.group_horizon_terrain.append(self.horizon_terrain)
         self.append(self.group_horizon_terrain)
@@ -292,7 +292,7 @@ class Application(App):
 
         self.slider_pitch = gui.SpinBox(0, -90.0, 90.0, 2.0)
         self.slider_orientation = gui.SpinBox(0, -180, 180, 2)
-        self.slider_roll = gui.SpinBox(0, -90, 90, 2.0)
+        self.slider_roll = gui.SpinBox(0, -180, 180, 2.0)
 
         vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch], width=300) )
         vbox0.append( gui.HBox(children=[gui.Label('orientation'), self.slider_orientation], width=300) )
