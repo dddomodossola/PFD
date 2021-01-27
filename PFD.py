@@ -187,15 +187,15 @@ class AttitudeIndicator(gui.SvgSubcontainer):
     def update_attitude(self):
         #self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, math.sin(math.radians(self.pitch)))
         
-        self.group_roll.attributes['transform'] = "rotate(%s 0 0)"%(self.roll)
+        self.group_roll.attributes['transform'] = "rotate(%s 0 0)"%(-self.roll)
         
-        self.group_roll_indicator.attributes['transform'] = "rotate(%s 0 0)"%(self.roll)
+        self.group_roll_indicator.attributes['transform'] = "rotate(%s 0 0)"%(-self.roll)
         self.group_roll_indicator.css_transform_origin = "0% 0%"
         
         offset = (math.sin(math.radians(90.0))/90.0*self.pitch*1.0)
         self.group_pitch.attributes['transform'] = "translate(0 %s)"%offset
-        self.group_horizon_terrain.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.roll, (offset*0.4))
-        self.group_roll.css_transform_origin = "50%% %.2fpx"%(-offset+1.03)
+        self.group_horizon_terrain.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(-self.roll, (offset*0.4))
+        self.group_roll.css_transform_origin = "50%% %.2fpx"%(-offset+0.97)
                 
 
 class PrimaryFlightDisplay(gui.Svg):
