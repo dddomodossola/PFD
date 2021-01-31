@@ -4,7 +4,6 @@
 from remi import gui
 from remi import start, App
 import math
-from pymavlink import mavutil
 
 class AttitudeIndicator(gui.SvgSubcontainer):
     pitch = 0
@@ -13,10 +12,14 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
     pitch_roll_scale_limit = 60
 
+    vw = 100
+    vh = 100
+    
     def __init__(self, *args, **kwargs):
-        gui.SvgSubcontainer.__init__(self, -0.5, -0.5, 1, 1, *args, **kwargs)
 
-        self.attr_viewBox = "-0.5 -0.5 1.0 1.0"
+        gui.SvgSubcontainer.__init__(self, -self.vw/2, -self.vh/2, self.vw, self.vh, *args, **kwargs)
+
+        self.attr_viewBox = "%s %s %s %s"%(-self.vw/2, -self.vh/2, self.vw, self.vh)
         
         self.group_pitch = gui.SvgGroup()
         self.group_pitch.css_transform = "rotate(0deg), translate(0, 0)"
@@ -31,14 +34,14 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
         #horizon
         #background is static and occupy the entire attidute indicator
-        self.horizon_background = gui.SvgRectangle(-0.5, -0.5, 1, 1)
+        self.horizon_background = gui.SvgRectangle(-self.vw/2, -self.vh/2, self.vw, self.vh)
         self.horizon_background.set_fill("rgb(0,100,255)")
         self.append(self.horizon_background)
 
         self.group_horizon_terrain = gui.SvgGroup()
-        self.horizon_terrain = gui.SvgRectangle(-1, 0, 2, 2)
+        self.horizon_terrain = gui.SvgRectangle(-self.vw, 0, self.vw*2, self.vh*2)
         self.horizon_terrain.set_fill("rgb(53, 151, 0)")
-        self.horizon_terrain.set_stroke(0.001, "lightgray")
+        self.horizon_terrain.set_stroke(self.vh/1000.0, "lightgray")
         self.group_horizon_terrain.append(self.horizon_terrain)
         self.append(self.group_horizon_terrain)
 
@@ -51,9 +54,9 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
 
         #roll angle indication
-        min_radius = 0.46
-        mid_radius = 0.48
-        max_radius = 0.5
+        min_radius = self.vw*0.45
+        mid_radius = self.vw*0.48
+        max_radius = self.vw*0.5
         angle_min = -60
         angle_max = 60
         angle_step = 5
@@ -64,20 +67,20 @@ class AttitudeIndicator(gui.SvgSubcontainer):
             y_min = -math.sin(math.radians(angle+90))*r
             x_max = math.cos(math.radians(angle+90))*max_radius
             y_max = -math.sin(math.radians(angle+90))*max_radius
-
+            
             hide_scale = abs(int(angle))>self.pitch_roll_scale_limit
 
             line = gui.SvgLine(x_min, y_min, x_max, y_max)
-            line.set_stroke(0.01, 'white' if not hide_scale else 'transparent')
+            line.set_stroke(self.vw*0.005, 'white' if not hide_scale else 'transparent')
             self.group_roll_indicator.append(line)
             if (angle%10)==0:
-                x_txt = math.cos(math.radians(angle+90))*(min_radius-0.03)
-                y_txt = -math.sin(math.radians(angle+90))*(min_radius-0.03)
+                x_txt = math.cos(math.radians(angle+90))*(min_radius-0.025*self.vw)
+                y_txt = -math.sin(math.radians(angle+90))*(min_radius-0.025*self.vw)
                 txt = gui.SvgText(x_txt, y_txt, str(abs(int(angle))))
-                txt.attr_dominant_baseline = 'middle'
+                txt.attr_dominant_baseline = 'hanging'
                 txt.attr_text_anchor = 'middle'
                 txt.set_fill('white' if not hide_scale else 'transparent')
-                txt.css_font_size = '0.04px'
+                txt.css_font_size = gui.to_pix(self.vw*0.04)
                 txt.css_font_weight = 'bolder'
                 self.group_roll_indicator.append(txt)
         self.append(self.group_roll_indicator)
@@ -88,48 +91,48 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.roll_indicator = gui.SvgPolygon(3)
         self.roll_indicator.set_fill('red')
         self.roll_indicator.set_stroke(1, 'black')
-        self.roll_indicator.add_coord(-0.04, -0.06)
-        self.roll_indicator.add_coord(0.0, -0.06 - 0.03)
-        self.roll_indicator.add_coord(0.04, -0.06)
+        self.roll_indicator.add_coord(-0.04*self.vw, -0.06*self.vw)
+        self.roll_indicator.add_coord(0.0*self.vw, (-0.06 - 0.03)*self.vw)
+        self.roll_indicator.add_coord(0.04*self.vw, -0.06*self.vw)
         self.group_roll_and_bank_angle_indicator.append(self.roll_indicator)
         self.bank_indicator = gui.SvgPolygon(4)
         self.bank_indicator.set_fill('transparent')
         self.bank_indicator.set_stroke(1, 'black')
-        self.bank_indicator.add_coord(-0.04, -0.06 + 0.005)
-        self.bank_indicator.add_coord(0.04, -0.06 + 0.005)
-        self.bank_indicator.add_coord(0.04, -0.06 + 0.025)
-        self.bank_indicator.add_coord(-0.04, -0.06 + 0.025)
+        self.bank_indicator.add_coord(-0.04*self.vw, (-0.06 + 0.005)*self.vw)
+        self.bank_indicator.add_coord(0.04*self.vw, (-0.06 + 0.005)*self.vw)
+        self.bank_indicator.add_coord(0.04*self.vw, (-0.06 + 0.025)*self.vw)
+        self.bank_indicator.add_coord(-0.04*self.vw, (-0.06 + 0.025)*self.vw)
         self.group_roll_and_bank_angle_indicator.append(self.bank_indicator)
-        self.group_roll_and_bank_angle_indicator.attributes['transform'] = "translate(0 -0.30)"
+        self.group_roll_and_bank_angle_indicator.attributes['transform'] = "translate(0 %s)"%(-0.3*self.vh)
         self.append(self.group_roll_and_bank_angle_indicator)
 
         #airplaine indicator is steady
-        thick = 0.02
+        thick = 0.02*self.vw
         self.airplane_svg_left = gui.SvgPolygon(8)
         self.airplane_svg_left.set_fill('gray')
-        self.airplane_svg_left.set_stroke(1, 'black')
-        self.airplane_svg_left.add_coord(-0.2, 0) #25x8
-        self.airplane_svg_left.add_coord(-0.40, 0)
-        self.airplane_svg_left.add_coord(-0.40, thick)
-        self.airplane_svg_left.add_coord(-0.2 - thick, thick)
-        self.airplane_svg_left.add_coord(-0.2 - thick, thick + 0.08)
-        self.airplane_svg_left.add_coord(-0.2, thick + 0.08)
-        self.airplane_svg_left.add_coord(-0.2, 0.08)
+        self.airplane_svg_left.set_stroke(0.005*self.vw, 'black')
+        self.airplane_svg_left.add_coord(-0.2*self.vw, 0*self.vw) #25x8
+        self.airplane_svg_left.add_coord(-0.40*self.vw, 0*self.vw)
+        self.airplane_svg_left.add_coord(-0.40*self.vw, thick)
+        self.airplane_svg_left.add_coord(-0.2*self.vw - thick, thick)
+        self.airplane_svg_left.add_coord(-0.2*self.vw - thick, thick + 0.08*self.vw)
+        self.airplane_svg_left.add_coord(-0.2*self.vw, thick + 0.08*self.vw)
+        self.airplane_svg_left.add_coord(-0.2*self.vw, 0.08*self.vw)
 
         self.airplane_svg_right = gui.SvgPolygon(8)
         self.airplane_svg_right.set_fill('gray')
-        self.airplane_svg_right.set_stroke(1, 'black')
-        self.airplane_svg_right.add_coord(0.2, 0) #25x8
-        self.airplane_svg_right.add_coord(0.40, 0)
-        self.airplane_svg_right.add_coord(0.40, thick)
-        self.airplane_svg_right.add_coord(0.2 + thick, thick)
-        self.airplane_svg_right.add_coord(0.2 + thick, thick + 0.08)
-        self.airplane_svg_right.add_coord(0.2, thick + 0.08)
-        self.airplane_svg_right.add_coord(0.2, 0.08)
+        self.airplane_svg_right.set_stroke(0.005*self.vw, 'black')
+        self.airplane_svg_right.add_coord(0.2*self.vw, 0*self.vw) #25x8
+        self.airplane_svg_right.add_coord(0.40*self.vw, 0*self.vw)
+        self.airplane_svg_right.add_coord(0.40*self.vw, thick)
+        self.airplane_svg_right.add_coord(0.2*self.vw + thick, thick)
+        self.airplane_svg_right.add_coord(0.2*self.vw + thick, thick + 0.08*self.vw)
+        self.airplane_svg_right.add_coord(0.2*self.vw, thick + 0.08*self.vw)
+        self.airplane_svg_right.add_coord(0.2*self.vw, 0.08*self.vw)
 
-        self.airplane_svg_center = gui.SvgRectangle(-0.02, -0.02, 0.04, 0.04)
+        self.airplane_svg_center = gui.SvgRectangle(-0.02*self.vw, -0.02*self.vw, 0.04*self.vw, 0.04*self.vw)
         self.airplane_svg_center.set_fill('white')
-        self.airplane_svg_center.set_stroke(0.01, 'lightgray')
+        self.airplane_svg_center.set_stroke(0.005*self.vw, 'lightgray')
 
         self.append([self.airplane_svg_left, self.airplane_svg_right, self.airplane_svg_center])
 
@@ -137,13 +140,13 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
     def generate_orientation_indicator(self):
         self.group_orientation_indicator_with_pointer = gui.SvgGroup()
-
-        orientation_indicator_y_pos = 0.3
+        
+        orientation_indicator_y_pos = 0.3*self.vh
 
         #orientation angle indication
-        min_radius = 0.3
-        mid_radius = 0.32
-        max_radius = 0.35
+        min_radius = 0.3*self.vw
+        mid_radius = 0.32*self.vw
+        max_radius = 0.35*self.vw
         angle_min = -180
         angle_max = 180
         angle_step = 5
@@ -151,7 +154,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         labels = {0:'N', -45:'NE', -90:'E', -135:'SE', -180:'S', 180:'S', 135:'SW', 90:'W', 45:'NW'}
         circle = gui.SvgCircle(0,0, max_radius)
         circle.set_fill('rgba(0,0,0,0.3)')
-        circle.set_stroke(0.01, 'white')
+        circle.set_stroke(0.005*self.vw, 'white')
         self.group_orientation_indicator.append(circle)
         for angle in labels.keys():
             r = min_radius
@@ -161,16 +164,16 @@ class AttitudeIndicator(gui.SvgSubcontainer):
             y_max = -math.sin(math.radians(angle+90))*max_radius
 
             line = gui.SvgLine(x_min, y_min, x_max, y_max)
-            line.set_stroke(0.01, 'white')
+            line.set_stroke(0.005*self.vw, 'white')
             self.group_orientation_indicator.append(line)
 
-            x_txt = math.cos(math.radians(angle+90))*(min_radius-0.03)
-            y_txt = -math.sin(math.radians(angle+90))*(min_radius-0.03)
+            x_txt = math.cos(math.radians(angle+90))*(min_radius-0.03*self.vw)
+            y_txt = -math.sin(math.radians(angle+90))*(min_radius-0.03*self.vw)
             txt = gui.SvgText(x_txt, y_txt, labels.get(angle, ''))
             txt.attr_dominant_baseline = 'middle'
             txt.attr_text_anchor = 'middle'
             txt.set_fill('white')
-            txt.css_font_size = '0.07px'
+            txt.css_font_size = gui.to_pix(0.07*self.vw)
             txt.css_font_weight = 'bolder'
             txt.css_transform_origin = '50% 50%'
             txt.css_transform_box = 'fill-box'
@@ -181,10 +184,10 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
         self.orientation_pointer = gui.SvgPolygon(3)
         self.orientation_pointer.set_fill('red')
-        self.orientation_pointer.set_stroke(1, 'black')
-        self.orientation_pointer.add_coord(-0.04, -0.06)
-        self.orientation_pointer.add_coord(0.0, 0.0)
-        self.orientation_pointer.add_coord(0.04, -0.06)
+        self.orientation_pointer.set_stroke(0.005*self.vw, 'black')
+        self.orientation_pointer.add_coord(-0.04*self.vw, -0.06*self.vw)
+        self.orientation_pointer.add_coord(0.0*self.vw, 0.0*self.vw)
+        self.orientation_pointer.add_coord(0.04*self.vw, -0.06*self.vw)
         self.orientation_pointer.attributes['transform'] = 'translate(0 %s)'%(-max_radius)
         self.group_orientation_indicator_with_pointer.append(self.orientation_pointer)
 
@@ -193,11 +196,11 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
     def generate_pitch_indicator(self):
         self.group_pitch_indicator.empty()
-        s1 = 0.05 #min_sign_width
-        s2 = 0.1 #mid_sign_width
-        s3 = 0.20 #max_sign_width
+        s1 = 0.05*self.vw #min_sign_width
+        s2 = 0.1*self.vw #mid_sign_width
+        s3 = 0.20*self.vw #max_sign_width
         index = 0
-        radius = 1.0
+        radius = 1.0*self.vw
         step = 2.5
         angle_min = -90
         angle_max = 90
@@ -208,12 +211,12 @@ class AttitudeIndicator(gui.SvgSubcontainer):
             angle = angle/10.0
             #angle = math.degrees(math.acos(math.cos(math.radians(angle))))
             hide_scale = abs(angle) > self.pitch_roll_scale_limit
-
+            
             if angle == 0:
                 sign_size = 0
             y = -math.sin(math.radians(90.0))/90.0*(angle)*radius
             line = gui.SvgLine(-sign_size/2, y, sign_size/2, y)
-            line.set_stroke(0.01, 'rgba(255,255,255,0.5)' if not hide_scale else 'transparent')
+            line.set_stroke(0.01*self.vw, 'rgba(255,255,255,0.5)' if not hide_scale else 'transparent')
             self.group_pitch_indicator.append(line)
 
             #if it is a big sign, add also text
@@ -222,14 +225,14 @@ class AttitudeIndicator(gui.SvgSubcontainer):
                 txt.attr_dominant_baseline = 'middle'
                 txt.attr_text_anchor = 'start'
                 txt.set_fill('rgba(255,255,255,0.5)' if not hide_scale else 'transparent')
-                txt.css_font_size = '0.04px'
+                txt.css_font_size = gui.to_pix(0.04*self.vw)
                 self.group_pitch_indicator.append(txt)
 
                 txt = gui.SvgText(-sign_size/2, y, str(int(angle)))
                 txt.attr_dominant_baseline = 'middle'
                 txt.attr_text_anchor = 'end'
                 txt.set_fill('rgba(255,255,255,0.5)' if not hide_scale else 'transparent')
-                txt.css_font_size = '0.04px'
+                txt.css_font_size = gui.to_pix(0.04*self.vw)
                 self.group_pitch_indicator.append(txt)
 
     def set_pitch(self, pitch):
@@ -245,21 +248,21 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         #self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, math.sin(math.radians(self.pitch)))
         
         self.group_roll.attributes['transform'] = "rotate(%s 0 0)"%(-self.roll)
-
+        
         self.group_roll_indicator.attributes['transform'] = "rotate(%s 0 0)"%(-self.roll)
         self.group_roll_indicator.css_transform_origin = "0% 0%"
-
-        offset = (math.sin(math.radians(90.0))/90.0*self.pitch*1.0)
+        
+        offset = (math.sin(math.radians(90.0))/90.0*self.pitch*self.vw)
         self.group_pitch.attributes['transform'] = "translate(0 %s)"%offset
         self.group_horizon_terrain.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(-self.roll, (offset*0.4))
-        self.group_roll.css_transform_origin = "50%% %.2fpx"%(-offset+0.97)
-
+        self.group_roll.css_transform_origin = "50%% %.2fpx"%(-offset+0.97*self.vw)
+        
         self.group_orientation_indicator.attributes['transform'] = "rotate(%s 0 0)"%(-self.orientation)
 
 class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
         gui.Svg.__init__(self, *args, **kwargs)
-        self.attr_viewBox = "-0.5 -0.5 1.0 1.0"
+        self.attr_viewBox = "-50 -50 100 100"
         self.attitude_indicator = AttitudeIndicator()
         self.append(self.attitude_indicator)
 
@@ -295,12 +298,6 @@ class Application(App):
         self.slider_orientation = gui.SpinBox(0, -180, 180, 2)
         self.slider_roll = gui.SpinBox(0, -180, 180, 2.0)
 
-        # msg = master.recv_match()
-        # if msg and msg.get_type() == 'AHRS2':
-        #     print("pitch ", msg.pitch, " roll ", msg.roll)
-        #     self.slider_pitch = msg.pitch
-        #     self.slider_roll = -msg.roll
-
         vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch], width=300) )
         vbox0.append( gui.HBox(children=[gui.Label('orientation'), self.slider_orientation], width=300) )
         vbox0.append( gui.HBox(children=[gui.Label('roll'), self.slider_roll], width=300) )
@@ -311,8 +308,6 @@ class Application(App):
 
 #Configuration
 configuration = {'config_project_name': 'untitled', 'config_address': '0.0.0.0', 'config_port': 8081, 'config_multiple_instance': True, 'config_enable_file_cache': True, 'config_start_browser': True, 'config_resourcepath': './res/'}
-
-master = mavutil.mavlink_connection('udpin:0.0.0.0:14550')
 
 if __name__ == "__main__":
     start(Application, address='0.0.0.0', port=8081, multiple_instance=False, start_browser=True, debug=False)
