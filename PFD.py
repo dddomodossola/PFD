@@ -295,11 +295,11 @@ class Application(App):
         self.slider_orientation = gui.SpinBox(0, -180, 180, 2)
         self.slider_roll = gui.SpinBox(0, -180, 180, 2.0)
 
-        msg = master.recv_match()
-        if msg and msg.get_type() == 'AHRS2':
-            print("pitch ", msg.pitch, " roll ", msg.roll)
-            self.slider_pitch = msg.pitch
-            self.slider_roll = -msg.roll
+        # msg = master.recv_match()
+        # if msg and msg.get_type() == 'AHRS2':
+        #     print("pitch ", msg.pitch, " roll ", msg.roll)
+        #     self.slider_pitch = msg.pitch
+        #     self.slider_roll = -msg.roll
 
         vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch], width=300) )
         vbox0.append( gui.HBox(children=[gui.Label('orientation'), self.slider_orientation], width=300) )
