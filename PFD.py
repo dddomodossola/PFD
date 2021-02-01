@@ -140,6 +140,50 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
     def generate_orientation_indicator(self):
         self.group_orientation_indicator_with_pointer = gui.SvgGroup()
+        self.orientation_pointer = gui.SvgPolygon(3)
+        self.orientation_pointer.set_fill('red')
+        self.orientation_pointer.set_stroke(0.005*self.vw, 'black')
+        self.orientation_pointer.add_coord(-0.04*self.vw, -0.06*self.vh)
+        self.orientation_pointer.add_coord(0.0*self.vw, 0.0*self.vh)
+        self.orientation_pointer.add_coord(0.04*self.vw, -0.06*self.vh)
+        self.group_orientation_indicator_with_pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.group_orientation_indicator_with_pointer.append(self.orientation_pointer)
+
+        self.append(self.group_orientation_indicator_with_pointer, 'orientation_indicator')
+
+        
+        view_size_angle = 180
+        view_size_percent = 0.8 * self.vw
+        labels = {0:'N', -45:'NE', -90:'E', -135:'SE', -180:'S', 180:'S', 135:'SW', 90:'W', 45:'NW'}
+        labels_size = {0:1.0, -45:0.7, -90:1.0, -135:0.7, -180:1.0, 180:1.0, 135:0.7, 90:1.0, 45:0.7}
+
+        self.group_orientation_indicator = gui.SvgGroup()
+        line = gui.SvgLine(-view_size_percent/2, 0, view_size_percent/2, 0)
+        line.set_stroke(0.005*self.vw, 'white')
+        self.group_orientation_indicator.append(line)
+        for angle in range(int(self.orientation-view_size_angle/2), int(self.orientation+view_size_angle/2)+1):
+            if angle in labels.keys():
+                x =  (-view_size_percent/2.0) + (angle-(self.orientation-view_size_angle/2))/view_size_angle*view_size_percent 
+                y = 0.05*self.vh * labels_size[angle]
+                line = gui.SvgLine(x, 0, x, y)
+                line.set_stroke(0.005*self.vw, 'white')
+                self.group_orientation_indicator.append(line)
+
+                txt = gui.SvgText(x, y, labels.get(angle, ''))
+                txt.attr_dominant_baseline = 'hanging'
+                txt.attr_text_anchor = 'middle'
+                txt.set_fill('white')
+                txt.css_font_size = gui.to_pix(0.07*self.vw*labels_size[angle])
+                txt.css_font_weight = 'bolder'
+                txt.css_transform_origin = '50% 50%'
+                txt.css_transform_box = 'fill-box'
+                #txt.attributes['transform'] = 'rotate(%s)'%(-angle)
+                self.group_orientation_indicator.append(txt)
+        self.group_orientation_indicator_with_pointer.append(self.group_orientation_indicator)
+
+
+    def generate_orientation_indicator_circle(self):
+        self.group_orientation_indicator_with_pointer = gui.SvgGroup()
         
         orientation_indicator_y_pos = 0.3*self.vh
 
@@ -245,6 +289,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.roll = roll
 
     def update_attitude(self):
+        self.generate_orientation_indicator()
+
         #self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, math.sin(math.radians(self.pitch)))
         
         self.group_roll.attributes['transform'] = "rotate(%s 0 0)"%(-self.roll)
@@ -257,7 +303,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.group_horizon_terrain.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(-self.roll, (offset*0.4))
         self.group_roll.css_transform_origin = "50%% %.2fpx"%(-offset+0.97*self.vw)
         
-        self.group_orientation_indicator.attributes['transform'] = "rotate(%s 0 0)"%(-self.orientation)
+        #self.group_orientation_indicator.attributes['transform'] = "rotate(%s 0 0)"%(-self.orientation)
 
 class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
@@ -307,7 +353,7 @@ class Application(App):
 
 
 #Configuration
-configuration = {'config_project_name': 'untitled', 'config_address': '0.0.0.0', 'config_port': 8081, 'config_multiple_instance': True, 'config_enable_file_cache': True, 'config_start_browser': True, 'config_resourcepath': './res/'}
+configuration = {'config_project_name': 'untitled', 'config_address': '0.0.0.0', 'config_port': 8080, 'config_multiple_instance': True, 'config_enable_file_cache': True, 'config_start_browser': True, 'config_resourcepath': './res/'}
 
 if __name__ == "__main__":
-    start(Application, address='0.0.0.0', port=8081, multiple_instance=False, start_browser=True, debug=False)
+    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False)
