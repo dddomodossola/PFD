@@ -5,6 +5,87 @@ from remi import gui
 from remi import start, App
 import math
 
+class OrientationTapeHorizontal(gui.SvgGroup):
+    orientation = 0
+    scale_length = 720
+    scale_length_visible = 180
+
+    subcontainer = None #contains the moving scale
+    pointer_with_value_group = None #contains the static pointer with actual value
+
+    wide = 0
+    high = 0
+
+    def __init__(self, x_pos, y_pos, wide, high, *args, **kwargs):
+        """ x_pos and y_pos are coordinates indicated by the pointer, generally at the center of the shown tape
+        """
+        gui.SvgGroup.__init__(self, *args, **kwargs)
+
+        self.wide = wide
+        self.high = high
+        
+        self.attributes['transform'] = 'translate(%s %s)'%(x_pos, y_pos)
+
+        #it is used a subcontainer in order to show only a part of the entire tape
+        self.subcontainer = gui.SvgSubcontainer(-wide/2, 0, wide, high)
+        self.subcontainer.set_viewbox(-self.scale_length_visible/2, 0, self.scale_length_visible, high)
+        self.append(self.subcontainer)
+
+        #horizontal line along all the tape size
+        self.group_orientation_indicator = gui.SvgGroup()
+        line = gui.SvgLine(-self.scale_length/2, 0, self.scale_length/2, 0)
+        line.set_stroke(0.005*high, 'white')
+        self.group_orientation_indicator.append(line)
+        
+        #creating labels
+        labels = {0:'N', 45:'NE', 90:'E', 135:'SE', 180:'S', 225:'SW', 270:'W', 315:'NW'}
+        labels_size = {0:1.0, 45:0.7, 90:1.0, 135:0.7, 180:1.0, 225:0.7, 270:1.0, 315:0.7}
+        for i in range(0, 36+1):
+            if not (i*10) in labels.keys():
+                labels[i*10] = "%02d"%i 
+                labels_size[i*10] = 0.3
+
+        for angle in range(int(-self.scale_length/2), int(self.scale_length/2)+1):
+            if angle%360 in labels.keys():
+                x =  angle
+                y = 0.05*self.high * labels_size[angle%360]
+                line = gui.SvgLine(x, 0, x, y)
+                line.set_stroke(1, 'white')
+                self.group_orientation_indicator.append(line)
+
+                txt = gui.SvgText(x, y, labels.get(angle%360, ''))
+                txt.attr_dominant_baseline = 'hanging'
+                txt.attr_text_anchor = 'middle'
+                txt.set_fill('white')
+                txt.css_font_size = gui.to_pix(10*labels_size[angle%360])
+                txt.css_font_weight = 'bolder'
+                self.group_orientation_indicator.append(txt)
+        self.subcontainer.append(self.group_orientation_indicator)
+        #self.group_orientation_indicator.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        
+        self.orientation_pointer = gui.SvgPolygon(3)
+        self.orientation_pointer.set_fill('red')
+        self.orientation_pointer.set_stroke(0.005*self.scale_length_visible, 'black')
+        self.orientation_pointer.add_coord(-0.01*self.scale_length_visible, -0.02*self.high)
+        self.orientation_pointer.add_coord(0.0*self.scale_length_visible, 0.0*self.high)
+        self.orientation_pointer.add_coord(0.01*self.scale_length_visible, -0.02*self.high)        
+        #self.orientation_pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.append(self.orientation_pointer)
+
+        orientation_value = gui.SvgText(0, -0.03*high, "%d"%(self.orientation%360))
+        orientation_value.attr_dominant_baseline = 'auto'
+        orientation_value.attr_text_anchor = 'middle'
+        orientation_value.set_fill('white')
+        orientation_value.css_font_size = gui.to_pix(0.07*self.scale_length_visible)
+        orientation_value.css_font_weight = 'bolder'
+        #orientation_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.append(orientation_value)
+        
+    def set_orientation(self, value):
+        self.orientation = value
+        self.subcontainer.set_viewbox(-self.scale_length_visible/2 + self.orientation, 0, self.scale_length_visible, self.high)
+
+
 class AttitudeIndicator(gui.SvgSubcontainer):
     pitch = 0
     orientation = 0
@@ -136,65 +217,9 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
         self.append([self.airplane_svg_left, self.airplane_svg_right, self.airplane_svg_center])
 
-        self.generate_orientation_indicator()
-
-    def generate_orientation_indicator(self):
-        self.orientation_subcontainer = gui.SvgSubcontainer(-0.8*self.vw/2, 0, 0.8*self.vw, 1*self.vh)
-        self.orientation_subcontainer.set_viewbox(-90, 0, 180, 1*self.vh)
-        self.append(self.orientation_subcontainer)
-
-        self.group_orientation_indicator_with_pointer = gui.SvgGroup()
-        self.orientation_subcontainer.append(self.group_orientation_indicator_with_pointer, 'orientation_indicator')
-        
-        view_size_angle = 720
-        labels = {0:'N', 45:'NE', 90:'E', 135:'SE', 180:'S', 235:'SW', 270:'W', 315:'NW'}
-        labels_size = {0:1.0, 45:0.7, 90:1.0, 135:0.7, 180:1.0, 235:0.7, 270:1.0, 315:0.7}
-        for i in range(0, 36+1):
-            if not (i*10) in labels.keys():
-                labels[i*10] = "%02d"%i 
-                labels_size[i*10] = 0.3
-
-        self.group_orientation_indicator = gui.SvgGroup()
-        line = gui.SvgLine(-view_size_angle/2, 0, view_size_angle/2, 0)
-        line.set_stroke(0.005*self.vw, 'white')
-        self.group_orientation_indicator.append(line)
-        for angle in range(int(-view_size_angle/2), int(view_size_angle/2)+1):
-            if angle%360 in labels.keys():
-                x =  angle
-                y = 0.05*self.vh * labels_size[angle%360]
-                line = gui.SvgLine(x, 0, x, y)
-                line.set_stroke(1, 'white')
-                self.group_orientation_indicator.append(line)
-
-                txt = gui.SvgText(x, y, labels.get(angle%360, ''))
-                txt.attr_dominant_baseline = 'hanging'
-                txt.attr_text_anchor = 'middle'
-                txt.set_fill('white')
-                txt.css_font_size = gui.to_pix(10*labels_size[angle%360])
-                txt.css_font_weight = 'bolder'
-                self.group_orientation_indicator.append(txt)
-        self.group_orientation_indicator_with_pointer.append(self.group_orientation_indicator)
-
-        
-        self.orientation_pointer = gui.SvgPolygon(3)
-        self.orientation_pointer.set_fill('red')
-        self.orientation_pointer.set_stroke(0.005*self.vw, 'black')
-        self.orientation_pointer.add_coord(-0.01*self.vw, -0.02*self.vh)
-        self.orientation_pointer.add_coord(0.0*self.vw, 0.0*self.vh)
-        self.orientation_pointer.add_coord(0.01*self.vw, -0.02*self.vh)        
-        self.orientation_pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
-        self.append(self.orientation_pointer)
-
-        orientation_value = gui.SvgText(0, -0.03*self.vh, "%d"%(self.orientation%360))
-        orientation_value.attr_dominant_baseline = 'auto'
-        orientation_value.attr_text_anchor = 'middle'
-        orientation_value.set_fill('white')
-        orientation_value.css_font_size = gui.to_pix(0.07*self.vw)
-        orientation_value.css_font_weight = 'bolder'
-        orientation_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
-        self.append(orientation_value)
-        
-        self.group_orientation_indicator_with_pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        #self.generate_orientation_indicator()
+        self.orientation_tape = OrientationTapeHorizontal(0, 0.3*self.vh, 0.8*self.vw, 1*self.vh)
+        self.append(self.orientation_tape)
 
     def generate_pitch_indicator(self):
         self.group_pitch_indicator.empty()
@@ -248,7 +273,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
     def update_attitude(self):
         #self.generate_orientation_indicator()
-        self.orientation_subcontainer.set_viewbox(-90 + self.orientation, 0, 180, 1*self.vh)
+        #self.orientation_subcontainer.set_viewbox(-90 + self.orientation, 0, 180, 1*self.vh)
+        self.orientation_tape.set_orientation(self.orientation)
 
         #self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, math.sin(math.radians(self.pitch)))
         
