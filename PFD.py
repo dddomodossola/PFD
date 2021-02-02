@@ -139,13 +139,14 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.generate_orientation_indicator()
 
     def generate_orientation_indicator(self):
+        self.orientation_subcontainer = gui.SvgSubcontainer(-0.8*self.vw/2, 0, 0.8*self.vw, 1*self.vh)
+        self.orientation_subcontainer.set_viewbox(-90, 0, 180, 1*self.vh)
+        self.append(self.orientation_subcontainer)
+
         self.group_orientation_indicator_with_pointer = gui.SvgGroup()
-        self.append(self.group_orientation_indicator_with_pointer, 'orientation_indicator')
+        self.orientation_subcontainer.append(self.group_orientation_indicator_with_pointer, 'orientation_indicator')
         
-        view_size_angle = 180
-        view_size_percent = 0.8 * self.vw
-        #labels = {0:'N', -45:'NE', -90:'E', -135:'SE', -180:'S', 180:'S', 135:'SW', 90:'W', 45:'NW'}
-        #labels_size = {0:1.0, -45:0.7, -90:1.0, -135:0.7, -180:1.0, 180:1.0, 135:0.7, 90:1.0, 45:0.7}
+        view_size_angle = 720
         labels = {0:'N', 45:'NE', 90:'E', 135:'SE', 180:'S', 235:'SW', 270:'W', 315:'NW'}
         labels_size = {0:1.0, 45:0.7, 90:1.0, 135:0.7, 180:1.0, 235:0.7, 270:1.0, 315:0.7}
         for i in range(0, 36+1):
@@ -154,26 +155,23 @@ class AttitudeIndicator(gui.SvgSubcontainer):
                 labels_size[i*10] = 0.3
 
         self.group_orientation_indicator = gui.SvgGroup()
-        line = gui.SvgLine(-view_size_percent/2, 0, view_size_percent/2, 0)
+        line = gui.SvgLine(-view_size_angle/2, 0, view_size_angle/2, 0)
         line.set_stroke(0.005*self.vw, 'white')
         self.group_orientation_indicator.append(line)
-        for angle in range(int(self.orientation-view_size_angle/2), int(self.orientation+view_size_angle/2)+1):
+        for angle in range(int(-view_size_angle/2), int(view_size_angle/2)+1):
             if angle%360 in labels.keys():
-                x =  (-view_size_percent/2.0) + (angle-(self.orientation-view_size_angle/2))/view_size_angle*view_size_percent 
+                x =  angle
                 y = 0.05*self.vh * labels_size[angle%360]
                 line = gui.SvgLine(x, 0, x, y)
-                line.set_stroke(0.005*self.vw, 'white')
+                line.set_stroke(1, 'white')
                 self.group_orientation_indicator.append(line)
 
                 txt = gui.SvgText(x, y, labels.get(angle%360, ''))
                 txt.attr_dominant_baseline = 'hanging'
                 txt.attr_text_anchor = 'middle'
                 txt.set_fill('white')
-                txt.css_font_size = gui.to_pix(0.07*self.vw*labels_size[angle%360])
+                txt.css_font_size = gui.to_pix(10*labels_size[angle%360])
                 txt.css_font_weight = 'bolder'
-                #txt.css_transform_origin = '50% 50%'
-                #txt.css_transform_box = 'fill-box'
-                #txt.attributes['transform'] = 'rotate(%s)'%(-angle)
                 self.group_orientation_indicator.append(txt)
         self.group_orientation_indicator_with_pointer.append(self.group_orientation_indicator)
 
@@ -184,7 +182,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.orientation_pointer.add_coord(-0.01*self.vw, -0.02*self.vh)
         self.orientation_pointer.add_coord(0.0*self.vw, 0.0*self.vh)
         self.orientation_pointer.add_coord(0.01*self.vw, -0.02*self.vh)        
-        self.group_orientation_indicator_with_pointer.append(self.orientation_pointer)
+        self.orientation_pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.append(self.orientation_pointer)
 
         orientation_value = gui.SvgText(0, -0.03*self.vh, "%d"%(self.orientation%360))
         orientation_value.attr_dominant_baseline = 'auto'
@@ -192,66 +191,10 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         orientation_value.set_fill('white')
         orientation_value.css_font_size = gui.to_pix(0.07*self.vw)
         orientation_value.css_font_weight = 'bolder'
-        self.group_orientation_indicator_with_pointer.append(orientation_value)
+        orientation_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.append(orientation_value)
         
         self.group_orientation_indicator_with_pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
-        
-
-    def generate_orientation_indicator_circle(self):
-        self.group_orientation_indicator_with_pointer = gui.SvgGroup()
-        
-        orientation_indicator_y_pos = 0.3*self.vh
-
-        #orientation angle indication
-        min_radius = 0.3*self.vw
-        mid_radius = 0.32*self.vw
-        max_radius = 0.35*self.vw
-        angle_min = -180
-        angle_max = 180
-        angle_step = 5
-        self.group_orientation_indicator = gui.SvgGroup()
-        labels = {0:'N', -45:'NE', -90:'E', -135:'SE', -180:'S', 180:'S', 135:'SW', 90:'W', 45:'NW'}
-        circle = gui.SvgCircle(0,0, max_radius)
-        circle.set_fill('rgba(0,0,0,0.3)')
-        circle.set_stroke(0.005*self.vw, 'white')
-        self.group_orientation_indicator.append(circle)
-        for angle in labels.keys():
-            r = min_radius
-            x_min = math.cos(math.radians(angle+90))*r
-            y_min = -math.sin(math.radians(angle+90))*r
-            x_max = math.cos(math.radians(angle+90))*max_radius
-            y_max = -math.sin(math.radians(angle+90))*max_radius
-
-            line = gui.SvgLine(x_min, y_min, x_max, y_max)
-            line.set_stroke(0.005*self.vw, 'white')
-            self.group_orientation_indicator.append(line)
-
-            x_txt = math.cos(math.radians(angle+90))*(min_radius-0.03*self.vw)
-            y_txt = -math.sin(math.radians(angle+90))*(min_radius-0.03*self.vw)
-            txt = gui.SvgText(x_txt, y_txt, labels.get(angle, ''))
-            txt.attr_dominant_baseline = 'middle'
-            txt.attr_text_anchor = 'middle'
-            txt.set_fill('white')
-            txt.css_font_size = gui.to_pix(0.07*self.vw)
-            txt.css_font_weight = 'bolder'
-            txt.css_transform_origin = '50% 50%'
-            txt.css_transform_box = 'fill-box'
-            txt.attributes['transform'] = 'rotate(%s)'%(-angle)
-            self.group_orientation_indicator.append(txt)
-        self.group_orientation_indicator_with_pointer.append(self.group_orientation_indicator)
-        self.group_orientation_indicator_with_pointer.attributes['transform'] = 'translate(0 %s)'%(max_radius+orientation_indicator_y_pos)
-
-        self.orientation_pointer = gui.SvgPolygon(3)
-        self.orientation_pointer.set_fill('red')
-        self.orientation_pointer.set_stroke(0.005*self.vw, 'black')
-        self.orientation_pointer.add_coord(-0.04*self.vw, -0.06*self.vw)
-        self.orientation_pointer.add_coord(0.0*self.vw, 0.0*self.vw)
-        self.orientation_pointer.add_coord(0.04*self.vw, -0.06*self.vw)
-        self.orientation_pointer.attributes['transform'] = 'translate(0 %s)'%(-max_radius)
-        self.group_orientation_indicator_with_pointer.append(self.orientation_pointer)
-
-        self.append(self.group_orientation_indicator_with_pointer)
-
 
     def generate_pitch_indicator(self):
         self.group_pitch_indicator.empty()
@@ -304,7 +247,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.roll = roll
 
     def update_attitude(self):
-        self.generate_orientation_indicator()
+        #self.generate_orientation_indicator()
+        self.orientation_subcontainer.set_viewbox(-90 + self.orientation, 0, 180, 1*self.vh)
 
         #self.group_pitch.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.orientation, math.sin(math.radians(self.pitch)))
         
@@ -366,9 +310,5 @@ class Application(App):
         return vbox0
     
 
-
-#Configuration
-configuration = {'config_project_name': 'untitled', 'config_address': '0.0.0.0', 'config_port': 8081, 'config_multiple_instance': True, 'config_enable_file_cache': True, 'config_start_browser': True, 'config_resourcepath': './res/'}
-
 if __name__ == "__main__":
-    start(Application, address='0.0.0.0', port=8081, multiple_instance=False, start_browser=True, debug=False)
+    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False)
