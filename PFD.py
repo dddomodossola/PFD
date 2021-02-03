@@ -229,7 +229,6 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         angle_min = -60
         angle_max = 60
         angle_step = 5
-        self.group_roll_indicator = gui.SvgGroup()
         for angle in range(angle_min, angle_max+angle_step, angle_step):
             r = min_radius if (angle%10)==0 else mid_radius
             x_min = math.cos(math.radians(angle+90))*r
@@ -241,7 +240,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
             line = gui.SvgLine(x_min, y_min, x_max, y_max)
             line.set_stroke(self.vw*0.005, 'white' if not hide_scale else 'transparent')
-            self.group_roll_indicator.append(line)
+            self.append(line)
             if (angle%10)==0:
                 x_txt = math.cos(math.radians(angle+90))*(min_radius-0.025*self.vw)
                 y_txt = -math.sin(math.radians(angle+90))*(min_radius-0.025*self.vw)
@@ -251,9 +250,12 @@ class AttitudeIndicator(gui.SvgSubcontainer):
                 txt.set_fill('white' if not hide_scale else 'transparent')
                 txt.css_font_size = gui.to_pix(self.vw*0.04)
                 txt.css_font_weight = 'bolder'
-                self.group_roll_indicator.append(txt)
-        self.append(self.group_roll_indicator)
+                self.append(txt)
 
+
+        self.group_roll_indicator = gui.SvgGroup()
+        self.group_roll_indicator.css_visibility = 'visible'
+        self.append(self.group_roll_indicator)
 
         #roll and bank indicator
         self.group_roll_and_bank_angle_indicator = gui.SvgGroup()
@@ -273,7 +275,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.bank_indicator.add_coord(-0.04*self.vw, (-0.06 + 0.025)*self.vw)
         self.group_roll_and_bank_angle_indicator.append(self.bank_indicator)
         self.group_roll_and_bank_angle_indicator.attributes['transform'] = "translate(0 %s)"%(-0.3*self.vh)
-        self.append(self.group_roll_and_bank_angle_indicator)
+        self.group_roll_indicator.append(self.group_roll_and_bank_angle_indicator)
 
         #airplaine indicator is steady
         thick = 0.02*self.vw
@@ -360,6 +362,11 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.roll = roll
 
     def update_attitude(self):
+        if self.group_roll_indicator.css_visibility == 'visible' and abs(self.roll) > 90:
+            self.group_roll_indicator.css_visibility = 'hidden'
+        if self.group_roll_indicator.css_visibility == 'hidden' and abs(self.roll) <= 90:
+            self.group_roll_indicator.css_visibility = 'visible'
+
         #self.generate_orientation_indicator()
         #self.orientation_subcontainer.set_viewbox(-90 + self.orientation, 0, 180, 1*self.vh)
         self.orientation_tape.set_orientation(self.orientation)
