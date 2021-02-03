@@ -19,10 +19,13 @@ class TapeVertical(gui.SvgGroup):
 
     left_side = True
 
-    def __init__(self, x_pos, y_pos, wide, high, left_side, *args, **kwargs):
+    def __init__(self, x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible, *args, **kwargs):
         """ x_pos and y_pos are coordinates indicated by the pointer, generally at the center of the shown tape
         """
         gui.SvgGroup.__init__(self, *args, **kwargs)
+
+        self.scale_length = scale_length
+        self.scale_length_visible = scale_length_visible
 
         self.wide = wide
         self.high = high
@@ -64,7 +67,7 @@ class TapeVertical(gui.SvgGroup):
                 txt.attr_dominant_baseline = 'middle'
                 txt.attr_text_anchor = 'end' if self.left_side else 'start'
                 txt.set_fill('white')
-                txt.css_font_size = gui.to_pix(0.3*self.wide*labels_size[v])
+                txt.css_font_size = gui.to_pix(0.45*self.wide*labels_size[v])
                 txt.css_font_weight = 'bolder'
                 self.group_indicator.append(txt)
         self.subcontainer.append(self.group_indicator)
@@ -79,17 +82,18 @@ class TapeVertical(gui.SvgGroup):
         #self.pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.pointer)
 
-        pointer_value = gui.SvgText(0, 0, "%d"%(self.value%360))
-        pointer_value.attr_dominant_baseline = 'middle'
-        pointer_value.attr_text_anchor = 'start' if self.left_side else 'end'
-        pointer_value.set_fill('white')
-        pointer_value.css_font_size = gui.to_pix(0.5*self.wide)
-        pointer_value.css_font_weight = 'bolder'
-        #pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
-        self.append(pointer_value)
+        self.pointer_value = gui.SvgText(0, 0, "%d"%(self.value%360))
+        self.pointer_value.attr_dominant_baseline = 'middle'
+        self.pointer_value.attr_text_anchor = 'start' if self.left_side else 'end'
+        self.pointer_value.set_fill('white')
+        self.pointer_value.css_font_size = gui.to_pix(0.5*self.wide)
+        self.pointer_value.css_font_weight = 'bolder'
+        #self.pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.append(self.pointer_value)
         
     def set_value(self, value):
         self.value = value
+        self.pointer_value.set_text("%d"%self.value)
         self.subcontainer.set_viewbox(-self.wide/2, -self.scale_length_visible/2 - self.value, self.wide, self.scale_length_visible)
 
 
@@ -396,18 +400,18 @@ class PrimaryFlightDisplay(gui.Svg):
         self.attitude_indicator = AttitudeIndicator()
         self.append(self.attitude_indicator)
 
-        self.left_tape = TapeVertical(-80, 0, 10, 80, True)
-        self.append(self.left_tape)
+        self.speed_indicator = TapeVertical(-62, 0, 10, 80, True, 999, 100) #three digits values
+        self.append(self.speed_indicator)
 
-        self.right_tape = TapeVertical(80, 0, 10, 80, False)
-        self.append(self.right_tape)
+        self.altitude_indicator = TapeVertical(62, 0, 10, 80, False, 9999, 100) #four digits values
+        self.append(self.altitude_indicator)
 
     def set_attitude_pitch(self, value):
         self.attitude_indicator.set_pitch(value)
 
     def set_attitude_orientation(self, value):
         self.attitude_indicator.set_orientation(value)
-        self.left_tape.set_value(value)
+        self.speed_indicator.set_value(value)
 
     def set_attitude_roll(self, value):
         self.attitude_indicator.set_roll(value)
