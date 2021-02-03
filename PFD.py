@@ -39,38 +39,16 @@ class TapeVertical(gui.SvgGroup):
         self.subcontainer.set_viewbox(-self.wide/2, -self.scale_length_visible/2, wide, self.scale_length_visible)
         self.append(self.subcontainer)
 
-        #horizontal line along all the tape size
         self.group_indicator = gui.SvgGroup()
-        x = self.wide/2 if self.left_side else -self.wide/2
-        line = gui.SvgLine(x, 0, x, -self.scale_length)
-        line.set_stroke(0.1*self.wide, 'white')
-        self.group_indicator.append(line)
-        
-        #creating labels
-        labels = {}
-        labels_size = {}
-        for i in range(0, self.scale_length+1, 10):
-            if not i in labels.keys():
-                labels[i] = "%d"%i 
-                labels_size[i] = 1.0
+       
+        self.group_scale = gui.SvgGroup()
+        self.build_scale()
 
-        indicator_size = self.wide*0.2
-        for v in range(0, int(self.scale_length)+1):
-            if v in labels.keys():
-                x =  (self.wide/2-indicator_size) if self.left_side else (-self.wide/2+indicator_size)
-                y = -v
-                line = gui.SvgLine(x, y, self.wide/2 if self.left_side else -self.wide/2, y)
-                line.set_stroke(0.03*self.wide, 'white')
-                self.group_indicator.append(line)
+        self.group_indicator.append(self.group_scale)        
 
-                txt = gui.SvgText(x, y, labels.get(v, ''))
-                txt.attr_dominant_baseline = 'middle'
-                txt.attr_text_anchor = 'end' if self.left_side else 'start'
-                txt.set_fill('white')
-                txt.css_font_size = gui.to_pix(0.45*self.wide*labels_size[v])
-                txt.css_font_weight = 'bolder'
-                self.group_indicator.append(txt)
         self.subcontainer.append(self.group_indicator)
+
+        
         #self.group_indicator.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         
         self.pointer = gui.SvgPolygon(3)
@@ -90,11 +68,48 @@ class TapeVertical(gui.SvgGroup):
         self.pointer_value.css_font_weight = 'bolder'
         #self.pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.pointer_value)
+
+    def build_scale(self):
+        self.group_scale.empty()
+
+        #horizontal line along all the tape size
+        x = self.wide/2 if self.left_side else -self.wide/2
+        line = gui.SvgLine(x, -self.value-self.scale_length_visible/2, x, -self.value+self.scale_length_visible/2)
+        line.set_stroke(0.1*self.wide, 'gray')
+        self.group_scale.append(line)
+
+        #creating labels
+        labels = {}
+        labels_size = {}
+        step = 10
+        for i in range(int(self.value/step -1 -(self.scale_length_visible/step)/2), int(self.value/step + (self.scale_length_visible/step)/2+1)):
+            if not i*step in labels.keys():
+                labels[i*step] = "%d"%(i*step) 
+                labels_size[i*step] = 1.0
+
+        indicator_size = self.wide*0.2
+        for v in range(int(self.value-self.scale_length_visible/2), int(self.value+self.scale_length_visible/2 +1)):
+            if v in labels.keys():
+                x =  (self.wide/2-indicator_size) if self.left_side else (-self.wide/2+indicator_size)
+                y = -v
+                line = gui.SvgLine(x, y, self.wide/2 if self.left_side else -self.wide/2, y)
+                line.set_stroke(0.03*self.wide, 'gray')
+                self.group_scale.append(line)
+
+                txt = gui.SvgText(x, y, labels.get(v, ''))
+                txt.attr_dominant_baseline = 'middle'
+                txt.attr_text_anchor = 'end' if self.left_side else 'start'
+                txt.set_fill('white')
+                txt.css_font_size = gui.to_pix(0.45*self.wide*labels_size[v])
+                txt.css_font_weight = 'bolder'
+                self.group_scale.append(txt)
+        
         
     def set_value(self, value):
         self.value = value
         self.pointer_value.set_text("%d"%self.value)
         self.subcontainer.set_viewbox(-self.wide/2, -self.scale_length_visible/2 - self.value, self.wide, self.scale_length_visible)
+        self.build_scale()
 
 
 class OrientationTapeHorizontal(gui.SvgGroup):
