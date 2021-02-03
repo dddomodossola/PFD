@@ -64,7 +64,7 @@ class TapeVertical(gui.SvgGroup):
         self.pointer_value.attr_dominant_baseline = 'middle'
         self.pointer_value.attr_text_anchor = 'start' if self.left_side else 'end'
         self.pointer_value.set_fill('white')
-        self.pointer_value.css_font_size = gui.to_pix(0.5*self.wide)
+        self.pointer_value.css_font_size = gui.to_pix(0.3*self.wide)
         self.pointer_value.css_font_weight = 'bolder'
         #self.pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.pointer_value)
@@ -100,7 +100,7 @@ class TapeVertical(gui.SvgGroup):
                 txt.attr_dominant_baseline = 'middle'
                 txt.attr_text_anchor = 'end' if self.left_side else 'start'
                 txt.set_fill('white')
-                txt.css_font_size = gui.to_pix(0.45*self.wide*labels_size[v])
+                txt.css_font_size = gui.to_pix(0.25*self.wide*labels_size[v])
                 txt.css_font_weight = 'bolder'
                 self.group_scale.append(txt)
         
@@ -135,7 +135,7 @@ class OrientationTapeHorizontal(gui.SvgGroup):
 
         #it is used a subcontainer in order to show only a part of the entire tape
         self.subcontainer = gui.SvgSubcontainer(-wide/2, 0, wide, high)
-        self.subcontainer.set_viewbox(-self.scale_length_visible/2, 0, self.scale_length_visible, high)
+        self.subcontainer.set_viewbox(-self.scale_length_visible/2, 0, self.scale_length_visible, high*(high/wide))
         self.append(self.subcontainer)
 
         #horizontal line along all the tape size
@@ -190,7 +190,7 @@ class OrientationTapeHorizontal(gui.SvgGroup):
         
     def set_orientation(self, value):
         self.orientation = value
-        self.subcontainer.set_viewbox(-self.scale_length_visible/2 + self.orientation, 0, self.scale_length_visible, self.high)
+        self.subcontainer.set_viewbox(-self.scale_length_visible/2 + self.orientation, 0, self.scale_length_visible, self.high*(self.high/self.wide))
 
 
 class AttitudeIndicator(gui.SvgSubcontainer):
@@ -327,7 +327,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.append([self.airplane_svg_left, self.airplane_svg_right, self.airplane_svg_center])
 
         #self.generate_orientation_indicator()
-        self.orientation_tape = OrientationTapeHorizontal(0, 0.3*self.vh, 0.8*self.vw, 1*self.vh)
+        self.orientation_tape = OrientationTapeHorizontal(0, 0.4*self.vh, 0.8*self.vw, 1.0*self.vh)
         self.append(self.orientation_tape)
 
     def generate_pitch_indicator(self):
@@ -415,10 +415,10 @@ class PrimaryFlightDisplay(gui.Svg):
         self.attitude_indicator = AttitudeIndicator()
         self.append(self.attitude_indicator)
 
-        self.speed_indicator = TapeVertical(-62, 0, 10, 80, True, 999, 100) #three digits values
+        self.speed_indicator = TapeVertical(-65, 0, 20, 80, True, 999, 100) #three digits values
         self.append(self.speed_indicator)
 
-        self.altitude_indicator = TapeVertical(62, 0, 10, 80, False, 9999, 100) #four digits values
+        self.altitude_indicator = TapeVertical(65, 0, 20, 80, False, 9999, 100) #four digits values
         self.append(self.altitude_indicator)
 
     def set_attitude_pitch(self, value):
@@ -431,6 +431,12 @@ class PrimaryFlightDisplay(gui.Svg):
     def set_attitude_roll(self, value):
         self.attitude_indicator.set_roll(value)
 
+    def set_altitude(self, value):
+        self.altitude_indicator.set_value(value)
+
+    def set_speed(self, value):
+        self.speed_indicator.set_value(value)
+
     def update_attitude(self):
         self.attitude_indicator.update_attitude()
 
@@ -442,6 +448,8 @@ class Application(App):
         self.pfd.set_attitude_pitch(float(self.slider_pitch.get_value()))
         self.pfd.set_attitude_orientation(float(self.slider_orientation.get_value()))
         self.pfd.set_attitude_roll(float(self.slider_roll.get_value()))
+        self.pfd.set_altitude(3000)
+        self.pfd.set_speed(375)
         self.pfd.update_attitude()
 
     def main(self):
