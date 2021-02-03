@@ -407,7 +407,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
         gui.Svg.__init__(self, *args, **kwargs)
-        self.attr_viewBox = "-100 -50 200 100"
+        self.attr_viewBox = "-85 -50 170 100"
         background = gui.SvgRectangle(-100, -50, 200, 100)
         background.set_fill('black')
         self.append(background)
