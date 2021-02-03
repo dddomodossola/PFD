@@ -448,26 +448,35 @@ class Application(App):
         self.pfd.set_attitude_pitch(float(self.slider_pitch.get_value()))
         self.pfd.set_attitude_orientation(float(self.slider_orientation.get_value()))
         self.pfd.set_attitude_roll(float(self.slider_roll.get_value()))
-        self.pfd.set_altitude(3000)
-        self.pfd.set_speed(375)
+        self.pfd.set_altitude(float(self.slider_altitude.get_value()))
+        self.pfd.set_speed(float(self.slider_speed.get_value()))
         self.pfd.update_attitude()
 
     def main(self):
-        vbox0 = gui.VBox(width="100%", height="100%")
+        hbox0 = gui.HBox(width="100%", height="100%")
+
+        w = "95%"
+        h = 30
+        self.slider_pitch = gui.SpinBox(0, -90.0, 90.0, 2.0, width=w, height=h)
+        self.slider_orientation = gui.SpinBox(0, -180, 180, 2, width=w, height=h)
+        self.slider_roll = gui.SpinBox(0, -180, 180, 2.0, width=w, height=h)
+        self.slider_altitude = gui.SpinBox(0, 0, 9999, 1.0, width=w, height=h)
+        self.slider_speed = gui.SpinBox(0, 0, 999, 1.0, width=w, height=h)
+
+        controls_container = gui.VBox()
+        controls_container.append( gui.VBox(children=[gui.Label('pitch'), self.slider_pitch], width=300) )
+        controls_container.append( gui.VBox(children=[gui.Label('orientation'), self.slider_orientation], width=300) )
+        controls_container.append( gui.VBox(children=[gui.Label('roll'), self.slider_roll], width=300) )
+        controls_container.append( gui.VBox(children=[gui.Label('altitude'), self.slider_altitude], width=300) )
+        controls_container.append( gui.VBox(children=[gui.Label('speed'), self.slider_speed], width=300) )
+
+        hbox0.append(controls_container)
 
         self.pfd = PrimaryFlightDisplay(width="100%", height="100%")
-        vbox0.append(self.pfd)
+        hbox0.append(self.pfd)
 
-        self.slider_pitch = gui.SpinBox(0, -90.0, 90.0, 2.0)
-        self.slider_orientation = gui.SpinBox(0, -180, 180, 2)
-        self.slider_roll = gui.SpinBox(0, -180, 180, 2.0)
-
-        vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch], width=300) )
-        vbox0.append( gui.HBox(children=[gui.Label('orientation'), self.slider_orientation], width=300) )
-        vbox0.append( gui.HBox(children=[gui.Label('roll'), self.slider_roll], width=300) )
-
-        return vbox0
+        return hbox0
     
 
 if __name__ == "__main__":
-    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False)
+    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False, update_interval=0.01)
