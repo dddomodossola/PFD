@@ -19,10 +19,13 @@ class TapeVertical(gui.SvgGroup):
 
     left_side = True
 
-    def __init__(self, x_pos, y_pos, wide, high, left_side, *args, **kwargs):
+    def __init__(self, x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible, *args, **kwargs):
         """ x_pos and y_pos are coordinates indicated by the pointer, generally at the center of the shown tape
         """
         gui.SvgGroup.__init__(self, *args, **kwargs)
+
+        self.scale_length = scale_length
+        self.scale_length_visible = scale_length_visible
 
         self.wide = wide
         self.high = high
@@ -36,38 +39,16 @@ class TapeVertical(gui.SvgGroup):
         self.subcontainer.set_viewbox(-self.wide/2, -self.scale_length_visible/2, wide, self.scale_length_visible)
         self.append(self.subcontainer)
 
-        #horizontal line along all the tape size
         self.group_indicator = gui.SvgGroup()
-        x = self.wide/2 if self.left_side else -self.wide/2
-        line = gui.SvgLine(x, 0, x, -self.scale_length)
-        line.set_stroke(0.1*self.wide, 'white')
-        self.group_indicator.append(line)
-        
-        #creating labels
-        labels = {}
-        labels_size = {}
-        for i in range(0, self.scale_length+1, 10):
-            if not i in labels.keys():
-                labels[i] = "%d"%i 
-                labels_size[i] = 1.0
+       
+        self.group_scale = gui.SvgGroup()
+        self.build_scale()
 
-        indicator_size = self.wide*0.2
-        for v in range(0, int(self.scale_length)+1):
-            if v in labels.keys():
-                x =  (self.wide/2-indicator_size) if self.left_side else (-self.wide/2+indicator_size)
-                y = -v
-                line = gui.SvgLine(x, y, self.wide/2 if self.left_side else -self.wide/2, y)
-                line.set_stroke(0.03*self.wide, 'white')
-                self.group_indicator.append(line)
+        self.group_indicator.append(self.group_scale)        
 
-                txt = gui.SvgText(x, y, labels.get(v, ''))
-                txt.attr_dominant_baseline = 'middle'
-                txt.attr_text_anchor = 'end' if self.left_side else 'start'
-                txt.set_fill('white')
-                txt.css_font_size = gui.to_pix(0.3*self.wide*labels_size[v])
-                txt.css_font_weight = 'bolder'
-                self.group_indicator.append(txt)
         self.subcontainer.append(self.group_indicator)
+
+        
         #self.group_indicator.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         
         self.pointer = gui.SvgPolygon(3)
@@ -79,18 +60,56 @@ class TapeVertical(gui.SvgGroup):
         #self.pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.pointer)
 
-        pointer_value = gui.SvgText(0, 0, "%d"%(self.value%360))
-        pointer_value.attr_dominant_baseline = 'middle'
-        pointer_value.attr_text_anchor = 'start' if self.left_side else 'end'
-        pointer_value.set_fill('white')
-        pointer_value.css_font_size = gui.to_pix(0.5*self.wide)
-        pointer_value.css_font_weight = 'bolder'
-        #pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
-        self.append(pointer_value)
+        self.pointer_value = gui.SvgText(0, 0, "%d"%(self.value%360))
+        self.pointer_value.attr_dominant_baseline = 'middle'
+        self.pointer_value.attr_text_anchor = 'start' if self.left_side else 'end'
+        self.pointer_value.set_fill('white')
+        self.pointer_value.css_font_size = gui.to_pix(0.3*self.wide)
+        self.pointer_value.css_font_weight = 'bolder'
+        #self.pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.append(self.pointer_value)
+
+    def build_scale(self):
+        self.group_scale.empty()
+
+        #horizontal line along all the tape size
+        x = self.wide/2 if self.left_side else -self.wide/2
+        line = gui.SvgLine(x, -self.value-self.scale_length_visible/2, x, -self.value+self.scale_length_visible/2)
+        line.set_stroke(0.1*self.wide, 'gray')
+        self.group_scale.append(line)
+
+        #creating labels
+        labels = {}
+        labels_size = {}
+        step = 10
+        for i in range(int(self.value/step -1 -(self.scale_length_visible/step)/2), int(self.value/step + (self.scale_length_visible/step)/2+1)):
+            if not i*step in labels.keys():
+                labels[i*step] = "%d"%(i*step) 
+                labels_size[i*step] = 1.0
+
+        indicator_size = self.wide*0.2
+        for v in range(int(self.value-self.scale_length_visible/2), int(self.value+self.scale_length_visible/2 +1)):
+            if v in labels.keys():
+                x =  (self.wide/2-indicator_size) if self.left_side else (-self.wide/2+indicator_size)
+                y = -v
+                line = gui.SvgLine(x, y, self.wide/2 if self.left_side else -self.wide/2, y)
+                line.set_stroke(0.03*self.wide, 'gray')
+                self.group_scale.append(line)
+
+                txt = gui.SvgText(x, y, labels.get(v, ''))
+                txt.attr_dominant_baseline = 'middle'
+                txt.attr_text_anchor = 'end' if self.left_side else 'start'
+                txt.set_fill('white')
+                txt.css_font_size = gui.to_pix(0.25*self.wide*labels_size[v])
+                txt.css_font_weight = 'bolder'
+                self.group_scale.append(txt)
+        
         
     def set_value(self, value):
         self.value = value
+        self.pointer_value.set_text("%d"%self.value)
         self.subcontainer.set_viewbox(-self.wide/2, -self.scale_length_visible/2 - self.value, self.wide, self.scale_length_visible)
+        self.build_scale()
 
 
 class OrientationTapeHorizontal(gui.SvgGroup):
@@ -116,7 +135,7 @@ class OrientationTapeHorizontal(gui.SvgGroup):
 
         #it is used a subcontainer in order to show only a part of the entire tape
         self.subcontainer = gui.SvgSubcontainer(-wide/2, 0, wide, high)
-        self.subcontainer.set_viewbox(-self.scale_length_visible/2, 0, self.scale_length_visible, high)
+        self.subcontainer.set_viewbox(-self.scale_length_visible/2, 0, self.scale_length_visible, high*(high/wide))
         self.append(self.subcontainer)
 
         #horizontal line along all the tape size
@@ -171,7 +190,7 @@ class OrientationTapeHorizontal(gui.SvgGroup):
         
     def set_orientation(self, value):
         self.orientation = value
-        self.subcontainer.set_viewbox(-self.scale_length_visible/2 + self.orientation, 0, self.scale_length_visible, self.high)
+        self.subcontainer.set_viewbox(-self.scale_length_visible/2 + self.orientation, 0, self.scale_length_visible, self.high*(self.high/self.wide))
 
 
 class AttitudeIndicator(gui.SvgSubcontainer):
@@ -229,7 +248,6 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         angle_min = -60
         angle_max = 60
         angle_step = 5
-        self.group_roll_indicator = gui.SvgGroup()
         for angle in range(angle_min, angle_max+angle_step, angle_step):
             r = min_radius if (angle%10)==0 else mid_radius
             x_min = math.cos(math.radians(angle+90))*r
@@ -241,7 +259,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
             line = gui.SvgLine(x_min, y_min, x_max, y_max)
             line.set_stroke(self.vw*0.005, 'white' if not hide_scale else 'transparent')
-            self.group_roll_indicator.append(line)
+            self.append(line)
             if (angle%10)==0:
                 x_txt = math.cos(math.radians(angle+90))*(min_radius-0.025*self.vw)
                 y_txt = -math.sin(math.radians(angle+90))*(min_radius-0.025*self.vw)
@@ -251,9 +269,12 @@ class AttitudeIndicator(gui.SvgSubcontainer):
                 txt.set_fill('white' if not hide_scale else 'transparent')
                 txt.css_font_size = gui.to_pix(self.vw*0.04)
                 txt.css_font_weight = 'bolder'
-                self.group_roll_indicator.append(txt)
-        self.append(self.group_roll_indicator)
+                self.append(txt)
 
+
+        self.group_roll_indicator = gui.SvgGroup()
+        self.group_roll_indicator.css_visibility = 'visible'
+        self.append(self.group_roll_indicator)
 
         #roll and bank indicator
         self.group_roll_and_bank_angle_indicator = gui.SvgGroup()
@@ -273,7 +294,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.bank_indicator.add_coord(-0.04*self.vw, (-0.06 + 0.025)*self.vw)
         self.group_roll_and_bank_angle_indicator.append(self.bank_indicator)
         self.group_roll_and_bank_angle_indicator.attributes['transform'] = "translate(0 %s)"%(-0.3*self.vh)
-        self.append(self.group_roll_and_bank_angle_indicator)
+        self.group_roll_indicator.append(self.group_roll_and_bank_angle_indicator)
 
         #airplaine indicator is steady
         thick = 0.02*self.vw
@@ -306,7 +327,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.append([self.airplane_svg_left, self.airplane_svg_right, self.airplane_svg_center])
 
         #self.generate_orientation_indicator()
-        self.orientation_tape = OrientationTapeHorizontal(0, 0.3*self.vh, 0.8*self.vw, 1*self.vh)
+        self.orientation_tape = OrientationTapeHorizontal(0, 0.4*self.vh, 0.8*self.vw, 1.0*self.vh)
         self.append(self.orientation_tape)
 
     def generate_pitch_indicator(self):
@@ -360,6 +381,11 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.roll = roll
 
     def update_attitude(self):
+        if self.group_roll_indicator.css_visibility == 'visible' and abs(self.roll) > 90:
+            self.group_roll_indicator.css_visibility = 'hidden'
+        if self.group_roll_indicator.css_visibility == 'hidden' and abs(self.roll) <= 90:
+            self.group_roll_indicator.css_visibility = 'visible'
+
         #self.generate_orientation_indicator()
         #self.orientation_subcontainer.set_viewbox(-90 + self.orientation, 0, 180, 1*self.vh)
         self.orientation_tape.set_orientation(self.orientation)
@@ -381,7 +407,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
         gui.Svg.__init__(self, *args, **kwargs)
-        self.attr_viewBox = "-100 -50 200 100"
+        self.attr_viewBox = "-85 -50 170 100"
         background = gui.SvgRectangle(-100, -50, 200, 100)
         background.set_fill('black')
         self.append(background)
@@ -389,21 +415,27 @@ class PrimaryFlightDisplay(gui.Svg):
         self.attitude_indicator = AttitudeIndicator()
         self.append(self.attitude_indicator)
 
-        self.left_tape = TapeVertical(-80, 0, 10, 80, True)
-        self.append(self.left_tape)
+        self.speed_indicator = TapeVertical(-65, 0, 20, 80, True, 999, 100) #three digits values
+        self.append(self.speed_indicator)
 
-        self.right_tape = TapeVertical(80, 0, 10, 80, False)
-        self.append(self.right_tape)
+        self.altitude_indicator = TapeVertical(65, 0, 20, 80, False, 9999, 100) #four digits values
+        self.append(self.altitude_indicator)
 
     def set_attitude_pitch(self, value):
         self.attitude_indicator.set_pitch(value)
 
     def set_attitude_orientation(self, value):
         self.attitude_indicator.set_orientation(value)
-        self.left_tape.set_value(value)
+        self.speed_indicator.set_value(value)
 
     def set_attitude_roll(self, value):
         self.attitude_indicator.set_roll(value)
+
+    def set_altitude(self, value):
+        self.altitude_indicator.set_value(value)
+
+    def set_speed(self, value):
+        self.speed_indicator.set_value(value)
 
     def update_attitude(self):
         self.attitude_indicator.update_attitude()
@@ -416,24 +448,35 @@ class Application(App):
         self.pfd.set_attitude_pitch(float(self.slider_pitch.get_value()))
         self.pfd.set_attitude_orientation(float(self.slider_orientation.get_value()))
         self.pfd.set_attitude_roll(float(self.slider_roll.get_value()))
+        self.pfd.set_altitude(float(self.slider_altitude.get_value()))
+        self.pfd.set_speed(float(self.slider_speed.get_value()))
         self.pfd.update_attitude()
 
     def main(self):
-        vbox0 = gui.VBox(width="100%", height="100%")
+        hbox0 = gui.HBox(width="100%", height="100%")
+
+        w = "95%"
+        h = 30
+        self.slider_pitch = gui.SpinBox(0, -90.0, 90.0, 2.0, width=w, height=h)
+        self.slider_orientation = gui.SpinBox(0, -180, 180, 2, width=w, height=h)
+        self.slider_roll = gui.SpinBox(0, -180, 180, 2.0, width=w, height=h)
+        self.slider_altitude = gui.SpinBox(0, 0, 9999, 1.0, width=w, height=h)
+        self.slider_speed = gui.SpinBox(0, 0, 999, 1.0, width=w, height=h)
+
+        controls_container = gui.VBox()
+        controls_container.append( gui.VBox(children=[gui.Label('pitch'), self.slider_pitch], width=300) )
+        controls_container.append( gui.VBox(children=[gui.Label('orientation'), self.slider_orientation], width=300) )
+        controls_container.append( gui.VBox(children=[gui.Label('roll'), self.slider_roll], width=300) )
+        controls_container.append( gui.VBox(children=[gui.Label('altitude'), self.slider_altitude], width=300) )
+        controls_container.append( gui.VBox(children=[gui.Label('speed'), self.slider_speed], width=300) )
+
+        hbox0.append(controls_container)
 
         self.pfd = PrimaryFlightDisplay(width="100%", height="100%")
-        vbox0.append(self.pfd)
+        hbox0.append(self.pfd)
 
-        self.slider_pitch = gui.SpinBox(0, -90.0, 90.0, 2.0)
-        self.slider_orientation = gui.SpinBox(0, -180, 180, 2)
-        self.slider_roll = gui.SpinBox(0, -180, 180, 2.0)
-
-        vbox0.append( gui.HBox(children=[gui.Label('pitch'), self.slider_pitch], width=300) )
-        vbox0.append( gui.HBox(children=[gui.Label('orientation'), self.slider_orientation], width=300) )
-        vbox0.append( gui.HBox(children=[gui.Label('roll'), self.slider_roll], width=300) )
-
-        return vbox0
+        return hbox0
     
 
 if __name__ == "__main__":
-    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False)
+    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False, update_interval=0.01)
