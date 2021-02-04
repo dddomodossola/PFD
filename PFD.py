@@ -354,6 +354,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         angle_min = -90
         angle_max = 90
         sign_sizes = [s3,   s1, s2,   s1]
+
+        content = ""
         for angle in range(int(angle_min*10), int(angle_max*10), int(step*10)):
             sign_size = sign_sizes[index%len(sign_sizes)]
             index += 1
@@ -364,12 +366,18 @@ class AttitudeIndicator(gui.SvgSubcontainer):
             if angle == 0:
                 sign_size = 0
             y = -math.sin(math.radians(90.0))/90.0*(angle)*radius
+            """
             line = gui.SvgLine(-sign_size/2, y, sign_size/2, y)
             line.set_stroke(0.01*self.vw, 'rgba(255,255,255,0.5)' if not hide_scale else 'transparent')
             self.group_pitch_indicator.append(line)
+            """
+            content += """<line class="SvgLine" x1="%(x1)s" y1="%(y1)s" x2="%(x2)s" y2="%(y2)s" stroke="rgba(255,255,255,0.5)" stroke-width="1.0"></line>"""%{'x1':-sign_size/2, 'y1':y, 'x2':sign_size/2, 'y2':y}
 
             #if it is a big sign, add also text
             if sign_size == s3:
+                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="rgba(255,255,255,0.5)" style="dominant-baseline:middle;text-anchor:start;font-size:4.0px">%(text)s</text>"""%{'x':sign_size/2, 'y':y, 'text':str(int(angle))}
+                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="rgba(255,255,255,0.5)" style="dominant-baseline:middle;text-anchor:end;font-size:4.0px">%(text)s</text>"""%{'x':-sign_size/2, 'y':y, 'text':str(int(angle))}
+                """
                 txt = gui.SvgText(sign_size/2, y, str(int(angle)))
                 txt.attr_dominant_baseline = 'middle'
                 txt.attr_text_anchor = 'start'
@@ -383,6 +391,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
                 txt.set_fill('rgba(255,255,255,0.5)' if not hide_scale else 'transparent')
                 txt.css_font_size = gui.to_pix(0.04*self.vw)
                 self.group_pitch_indicator.append(txt)
+                """
+        self.group_pitch_indicator.add_child('content', content)
 
     def set_pitch(self, pitch):
         self.pitch = pitch
