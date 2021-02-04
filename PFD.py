@@ -97,20 +97,25 @@ class TapeVertical(gui.SvgGroup):
 
         indicator_x =  (self.wide/2-self.indicator_size) if self.left_side else (-self.wide/2+self.indicator_size)
         text_x = ((self.wide/2-self.indicator_size) if self.left_side else (self.wide/2-0.05*self.wide))
+        content = ""
         for v in range(int(self.value-self.scale_length_visible/2), int(self.value+self.scale_length_visible/2 +1)):
             if v in labels.keys():
                 y = -v
-                line = gui.SvgLine(indicator_x, y, self.wide/2 if self.left_side else -self.wide/2, y)
+                """line = gui.SvgLine(indicator_x, y, self.wide/2 if self.left_side else -self.wide/2, y)
                 line.set_stroke(0.03*self.wide, 'gray')
                 self.group_scale.append(line)
+                """
+                content += """<line class="SvgLine" x1="%(x1)s" y1="%(y1)s" x2="%(x2)s" y2="%(y2)s" stroke="gray" stroke-width="0.6"></line>"""%{'x1':indicator_x, 'y1':y, 'x2':(self.wide/2 if self.left_side else -self.wide/2), 'y2':y}
 
-                txt = gui.SvgText(text_x, y, labels.get(v, ''))
+                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="white" style="dominant-baseline:middle;text-anchor:end;font-size:5.0px;font-weight:bolder">%(text)s</text>"""%{'x':text_x, 'y':y, 'text':labels.get(v, '') }
+                """txt = gui.SvgText(text_x, y, labels.get(v, ''))
                 txt.attr_dominant_baseline = 'middle'
                 txt.attr_text_anchor = 'end' if self.left_side else 'end'
                 txt.set_fill('white')
                 txt.css_font_size = gui.to_pix(0.25*self.wide*labels_size[v])
                 txt.css_font_weight = 'bolder'
-                self.group_scale.append(txt)
+                self.group_scale.append(txt)"""
+        self.group_scale.add_child('content', content)
         
         
     def set_value(self, value):
