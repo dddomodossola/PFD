@@ -19,6 +19,8 @@ class TapeVertical(gui.SvgGroup):
 
     left_side = True
 
+    indicator_size = 0
+
     def __init__(self, x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible, *args, **kwargs):
         """ x_pos and y_pos are coordinates indicated by the pointer, generally at the center of the shown tape
         """
@@ -30,6 +32,7 @@ class TapeVertical(gui.SvgGroup):
         self.wide = wide
         self.high = high
 
+        self.indicator_size = self.wide*0.2
         self.left_side = left_side
         
         self.attributes['transform'] = 'translate(%s %s)'%(x_pos, y_pos)
@@ -51,19 +54,24 @@ class TapeVertical(gui.SvgGroup):
         
         #self.group_indicator.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         
-        self.pointer = gui.SvgPolygon(3)
-        self.pointer.set_fill('violet')
-        self.pointer.set_stroke(0.005*self.scale_length_visible, 'black')
-        self.pointer.add_coord(0.2*self.wide*(-1 if self.left_side else 1 ), 0)
-        self.pointer.add_coord(0, 0.1*self.wide)
-        self.pointer.add_coord(0, -0.1*self.wide)        
+        self.pointer = gui.SvgPolygon(5)
+        self.pointer.set_fill('black')
+        self.pointer.set_stroke(0.02*self.scale_length_visible, 'red')
+        direction = (-1 if self.left_side else 1)
+        pointer_x = 0 #(-self.wide if self.left_side else 0)
+        pointer_width = self.wide
+        self.pointer.add_coord(pointer_x, 0)
+        self.pointer.add_coord(pointer_x+((0.2*self.wide)*direction), 0.2*self.wide)
+        self.pointer.add_coord(pointer_x+pointer_width*direction, 0.2*self.wide)
+        self.pointer.add_coord(pointer_x+pointer_width*direction, -0.2*self.wide)
+        self.pointer.add_coord(pointer_x+((0.2*self.wide)*direction), -0.2*self.wide)
         #self.pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.pointer)
 
-        self.pointer_value = gui.SvgText(0, 0, "%d"%(self.value%360))
+        self.pointer_value = gui.SvgText(((0-self.indicator_size) if self.left_side else (self.wide-0.05*self.wide)), 0, "%d"%(self.value%360))
         self.pointer_value.attr_dominant_baseline = 'middle'
-        self.pointer_value.attr_text_anchor = 'start' if self.left_side else 'end'
-        self.pointer_value.set_fill('white')
+        self.pointer_value.attr_text_anchor = 'end' if self.left_side else 'end'
+        self.pointer_value.set_fill('orange')
         self.pointer_value.css_font_size = gui.to_pix(0.3*self.wide)
         self.pointer_value.css_font_weight = 'bolder'
         #self.pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
@@ -87,22 +95,27 @@ class TapeVertical(gui.SvgGroup):
                 labels[i*step] = "%d"%(i*step) 
                 labels_size[i*step] = 1.0
 
-        indicator_size = self.wide*0.2
+        indicator_x =  (self.wide/2-self.indicator_size) if self.left_side else (-self.wide/2+self.indicator_size)
+        text_x = ((self.wide/2-self.indicator_size) if self.left_side else (self.wide/2-0.05*self.wide))
+        content = ""
         for v in range(int(self.value-self.scale_length_visible/2), int(self.value+self.scale_length_visible/2 +1)):
             if v in labels.keys():
-                x =  (self.wide/2-indicator_size) if self.left_side else (-self.wide/2+indicator_size)
                 y = -v
-                line = gui.SvgLine(x, y, self.wide/2 if self.left_side else -self.wide/2, y)
+                """line = gui.SvgLine(indicator_x, y, self.wide/2 if self.left_side else -self.wide/2, y)
                 line.set_stroke(0.03*self.wide, 'gray')
                 self.group_scale.append(line)
+                """
+                content += """<line class="SvgLine" x1="%(x1)s" y1="%(y1)s" x2="%(x2)s" y2="%(y2)s" stroke="gray" stroke-width="0.6"></line>"""%{'x1':indicator_x, 'y1':y, 'x2':(self.wide/2 if self.left_side else -self.wide/2), 'y2':y}
 
-                txt = gui.SvgText(x, y, labels.get(v, ''))
+                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="white" style="dominant-baseline:middle;text-anchor:end;font-size:5.0px;font-weight:bolder">%(text)s</text>"""%{'x':text_x, 'y':y, 'text':labels.get(v, '') }
+                """txt = gui.SvgText(text_x, y, labels.get(v, ''))
                 txt.attr_dominant_baseline = 'middle'
-                txt.attr_text_anchor = 'end' if self.left_side else 'start'
+                txt.attr_text_anchor = 'end' if self.left_side else 'end'
                 txt.set_fill('white')
                 txt.css_font_size = gui.to_pix(0.25*self.wide*labels_size[v])
                 txt.css_font_weight = 'bolder'
-                self.group_scale.append(txt)
+                self.group_scale.append(txt)"""
+        self.group_scale.add_child('content', content)
         
         
     def set_value(self, value):
@@ -164,7 +177,7 @@ class OrientationTapeHorizontal(gui.SvgGroup):
                 txt.attr_dominant_baseline = 'hanging'
                 txt.attr_text_anchor = 'middle'
                 txt.set_fill('white')
-                txt.css_font_size = gui.to_pix(5*labels_size[angle%360])
+                txt.css_font_size = gui.to_pix(7*labels_size[angle%360])
                 txt.css_font_weight = 'bolder'
                 self.group_orientation_indicator.append(txt)
         self.subcontainer.append(self.group_orientation_indicator)
@@ -341,6 +354,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         angle_min = -90
         angle_max = 90
         sign_sizes = [s3,   s1, s2,   s1]
+
+        content = ""
         for angle in range(int(angle_min*10), int(angle_max*10), int(step*10)):
             sign_size = sign_sizes[index%len(sign_sizes)]
             index += 1
@@ -351,12 +366,18 @@ class AttitudeIndicator(gui.SvgSubcontainer):
             if angle == 0:
                 sign_size = 0
             y = -math.sin(math.radians(90.0))/90.0*(angle)*radius
+            """
             line = gui.SvgLine(-sign_size/2, y, sign_size/2, y)
             line.set_stroke(0.01*self.vw, 'rgba(255,255,255,0.5)' if not hide_scale else 'transparent')
             self.group_pitch_indicator.append(line)
+            """
+            content += """<line class="SvgLine" x1="%(x1)s" y1="%(y1)s" x2="%(x2)s" y2="%(y2)s" stroke="rgba(255,255,255,0.5)" stroke-width="1.0"></line>"""%{'x1':-sign_size/2, 'y1':y, 'x2':sign_size/2, 'y2':y}
 
             #if it is a big sign, add also text
             if sign_size == s3:
+                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="rgba(255,255,255,0.5)" style="dominant-baseline:middle;text-anchor:start;font-size:4.0px">%(text)s</text>"""%{'x':sign_size/2, 'y':y, 'text':str(int(angle))}
+                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="rgba(255,255,255,0.5)" style="dominant-baseline:middle;text-anchor:end;font-size:4.0px">%(text)s</text>"""%{'x':-sign_size/2, 'y':y, 'text':str(int(angle))}
+                """
                 txt = gui.SvgText(sign_size/2, y, str(int(angle)))
                 txt.attr_dominant_baseline = 'middle'
                 txt.attr_text_anchor = 'start'
@@ -370,6 +391,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
                 txt.set_fill('rgba(255,255,255,0.5)' if not hide_scale else 'transparent')
                 txt.css_font_size = gui.to_pix(0.04*self.vw)
                 self.group_pitch_indicator.append(txt)
+                """
+        self.group_pitch_indicator.add_child('content', content)
 
     def set_pitch(self, pitch):
         self.pitch = pitch
@@ -407,7 +430,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
         gui.Svg.__init__(self, *args, **kwargs)
-        self.attr_viewBox = "-85 -50 170 100"
+        self.attr_viewBox = "-72 -50 144 100"
         background = gui.SvgRectangle(-100, -50, 200, 100)
         background.set_fill('black')
         self.append(background)
@@ -415,10 +438,10 @@ class PrimaryFlightDisplay(gui.Svg):
         self.attitude_indicator = AttitudeIndicator()
         self.append(self.attitude_indicator)
 
-        self.speed_indicator = TapeVertical(-65, 0, 20, 80, True, 999, 100) #three digits values
+        self.speed_indicator = TapeVertical(-51, 0, 20, 80, True, 999, 100) #three digits values
         self.append(self.speed_indicator)
 
-        self.altitude_indicator = TapeVertical(65, 0, 20, 80, False, 9999, 100) #four digits values
+        self.altitude_indicator = TapeVertical(51, 0, 20, 80, False, 9999, 100) #four digits values
         self.append(self.altitude_indicator)
 
     def set_attitude_pitch(self, value):
