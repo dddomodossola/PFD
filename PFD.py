@@ -427,6 +427,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         
         #self.group_orientation_indicator.attributes['transform'] = "rotate(%s 0 0)"%(-self.orientation)
 
+
 class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
         gui.Svg.__init__(self, *args, **kwargs)
@@ -476,7 +477,25 @@ class Application(App):
         self.pfd.update_attitude()
 
     def main(self):
-        hbox0 = gui.HBox(width="100%", height="100%")
+
+        self.main_container = gui.GridBox(width=640, height=360, style={'background-color':'black'})
+        self.main_container.set_from_asciiart("""
+        | t0           | t0                                  | t0                                 | t0           |
+        | left1        | pfd                                 | pfd                                | right        |
+        | left1        | pfd                                 | pfd                                | right        |
+        | left1        | pfd                                 | pfd                                | right        |
+        | left2        | pfd                                 | pfd                                | right        |
+        | left2        | pfd                                 | pfd                                | right        |
+        | left2        | pfd                                 | pfd                                | right        |
+        | left3        | pfd                                 | pfd                                | right        |
+        | left3        | pfd                                 | pfd                                | right        |
+        | left3        | pfd                                 | pfd                                | right        |
+        | left4        | pfd                                 | pfd                                | right        |
+        | left4        | pfd                                 | pfd                                | right        |
+        | left4        | pfd                                 | pfd                                | right        |
+        | s            | m                                   | t5                                 | t6           |
+        | t1           | t1                                  | t1                                 | t1           |
+        """,0,0)
 
         w = "95%"
         h = 30
@@ -485,7 +504,7 @@ class Application(App):
         self.slider_roll = gui.SpinBox(0, -180, 180, 2.0, width=w, height=h)
         self.slider_altitude = gui.SpinBox(0, 0, 9999, 1.0, width=w, height=h)
         self.slider_speed = gui.SpinBox(0, 0, 999, 1.0, width=w, height=h)
-
+        """
         controls_container = gui.VBox()
         controls_container.append( gui.VBox(children=[gui.Label('pitch'), self.slider_pitch], width=300) )
         controls_container.append( gui.VBox(children=[gui.Label('orientation'), self.slider_orientation], width=300) )
@@ -494,12 +513,35 @@ class Application(App):
         controls_container.append( gui.VBox(children=[gui.Label('speed'), self.slider_speed], width=300) )
 
         hbox0.append(controls_container)
-
+        """
         self.pfd = PrimaryFlightDisplay(width="100%", height="100%")
-        hbox0.append(self.pfd)
 
-        return hbox0
+        self.t0 = gui.Label("T0", style={'text-align':'center', 'color':'orange'})
+        self.t1 = gui.Label("T1", style={'text-align':'center', 'color':'orange'})
+        self.t5 = gui.Label("T5", style={'text-align':'center', 'color':'orange'})
+        self.t6 = gui.Label("T6", style={'text-align':'center', 'color':'orange'})
+        self.s = gui.Label("S", style={'text-align':'center', 'color':'orange'})
+        self.m = gui.Label("M", style={'text-align':'center', 'color':'orange'})
+        self.left1 = gui.Label("left1", style={'text-align':'center', 'color':'orange'})
+        self.left2 = gui.Label("left2", style={'text-align':'center', 'color':'orange'})
+        self.left3 = gui.Label("left3", style={'text-align':'center', 'color':'orange'})
+        self.left4 = gui.Label("left4", style={'text-align':'center', 'color':'orange'})
+
+        self.main_container.append(self.pfd, "pfd")
+        self.main_container.append(self.t0, "t0")
+        self.main_container.append(self.t1, "t1")
+        self.main_container.append(self.t5, "t5")
+        self.main_container.append(self.t6, "t6")
+        self.main_container.append(self.s, "s")
+        self.main_container.append(self.m, "m")
+        self.main_container.append(self.left1, "left1")
+        self.main_container.append(self.left2, "left2")
+        self.main_container.append(self.left3, "left3")
+        self.main_container.append(self.left4, "left4")
+        self.main_container.append(gui.Label('right'), "right")
     
+        return self.main_container
+
 
 if __name__ == "__main__":
     start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False)
