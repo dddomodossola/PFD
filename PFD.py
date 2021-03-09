@@ -107,7 +107,7 @@ class TapeVertical(gui.SvgGroup):
                 """
                 content += """<line class="SvgLine" x1="%(x1)s" y1="%(y1)s" x2="%(x2)s" y2="%(y2)s" stroke="gray" stroke-width="0.6"></line>"""%{'x1':indicator_x, 'y1':y, 'x2':(self.wide/2 if self.left_side else -self.wide/2), 'y2':y}
 
-                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="white" style="dominant-baseline:middle;text-anchor:end;font-size:5.0px;font-weight:bolder">%(text)s</text>"""%{'x':text_x, 'y':y, 'text':labels.get(v, '') }
+                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="white" style="dominant-baseline:middle;text-anchor:end;font-size:%(font)s;font-weight:bolder">%(text)s</text>"""%{'x':text_x, 'y':y, 'text':labels.get(v, ''), 'font':gui.to_pix(0.28*self.wide) }
                 """txt = gui.SvgText(text_x, y, labels.get(v, ''))
                 txt.attr_dominant_baseline = 'middle'
                 txt.attr_text_anchor = 'end' if self.left_side else 'end'
@@ -445,6 +445,10 @@ class PrimaryFlightDisplay(gui.Svg):
         self.altitude_indicator = TapeVertical(51, 0, 20, 80, False, 9999, 100) #four digits values
         self.append(self.altitude_indicator)
 
+        #x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible
+        self.VSI_indicator = TapeVertical(75, 0, 10, 50, False, 100, 30)
+        self.append(self.VSI_indicator)
+
     def set_attitude_pitch(self, value):
         self.attitude_indicator.set_pitch(value)
 
@@ -461,11 +465,17 @@ class PrimaryFlightDisplay(gui.Svg):
     def set_speed(self, value):
         self.speed_indicator.set_value(value)
 
+    def set_VSI(self, value):
+        self.VSI_indicator.set_value(value)
+
     def update_attitude(self):
         self.attitude_indicator.update_attitude()
 
 
 class Application(App):
+    color_flipper = None
+    standard_label_color = 'orange'
+
     def idle(self):
         #idle function called every update cycle
         #self.svg_group.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.rotation, self.movement)
@@ -476,23 +486,39 @@ class Application(App):
         self.pfd.set_speed(float(self.slider_speed.get_value()))
         self.pfd.update_attitude()
 
+        self.s.set_text("Fix3 HDOP: 0.7")
+        self.m.set_text("STABILIZED")
+        self.t1.set_text("Gen: 25.5v")
+        self.t5.set_text("Batt: 23.2V")
+
+        #just an example
+        battery_is_low = True
+        if battery_is_low:
+            self.t5.css_color = self.color_flipper[0]
+        else:
+            self.t5.css_color = self.standard_label_color
+
+        #swap colors each update
+        self.color_flipper = [self.color_flipper[1],self.color_flipper[0]]
+
     def main(self):
+        self.color_flipper = ['orange', 'white']
 
         self.main_container = gui.GridBox(width=640, height=360, style={'background-color':'black'})
         self.main_container.set_from_asciiart("""
         | t0           | t0                                  | t0                                 | t0           |
-        | left1        | pfd                                 | pfd                                | right        |
-        | left1        | pfd                                 | pfd                                | right        |
-        | left1        | pfd                                 | pfd                                | right        |
-        | left2        | pfd                                 | pfd                                | right        |
-        | left2        | pfd                                 | pfd                                | right        |
-        | left2        | pfd                                 | pfd                                | right        |
-        | left3        | pfd                                 | pfd                                | right        |
-        | left3        | pfd                                 | pfd                                | right        |
-        | left3        | pfd                                 | pfd                                | right        |
-        | left4        | pfd                                 | pfd                                | right        |
-        | left4        | pfd                                 | pfd                                | right        |
-        | left4        | pfd                                 | pfd                                | right        |
+        | left1        | pfd                                 | pfd                                | pfd          |
+        | left1        | pfd                                 | pfd                                | pfd          |
+        | left1        | pfd                                 | pfd                                | pfd          |
+        | left2        | pfd                                 | pfd                                | pfd          |
+        | left2        | pfd                                 | pfd                                | pfd          |
+        | left2        | pfd                                 | pfd                                | pfd          |
+        | left3        | pfd                                 | pfd                                | pfd          |
+        | left3        | pfd                                 | pfd                                | pfd          |
+        | left3        | pfd                                 | pfd                                | pfd          |
+        | left4        | pfd                                 | pfd                                | pfd          |
+        | left4        | pfd                                 | pfd                                | pfd          |
+        | left4        | pfd                                 | pfd                                | pfd          |
         | s            | m                                   | t5                                 | t6           |
         | t1           | t1                                  | t1                                 | t1           |
         """,0,0)
@@ -516,16 +542,16 @@ class Application(App):
         """
         self.pfd = PrimaryFlightDisplay(width="100%", height="100%")
 
-        self.t0 = gui.Label("T0", style={'text-align':'center', 'color':'orange'})
-        self.t1 = gui.Label("T1", style={'text-align':'center', 'color':'orange'})
-        self.t5 = gui.Label("T5", style={'text-align':'center', 'color':'orange'})
-        self.t6 = gui.Label("T6", style={'text-align':'center', 'color':'orange'})
-        self.s = gui.Label("S", style={'text-align':'center', 'color':'orange'})
-        self.m = gui.Label("M", style={'text-align':'center', 'color':'orange'})
-        self.left1 = gui.Label("left1", style={'text-align':'center', 'color':'orange'})
-        self.left2 = gui.Label("left2", style={'text-align':'center', 'color':'orange'})
-        self.left3 = gui.Label("left3", style={'text-align':'center', 'color':'orange'})
-        self.left4 = gui.Label("left4", style={'text-align':'center', 'color':'orange'})
+        self.t0 = gui.Label("T0", style={'text-align':'center', 'color':self.standard_label_color})
+        self.t1 = gui.Label("T1", style={'text-align':'center', 'color':self.standard_label_color})
+        self.t5 = gui.Label("T5", style={'text-align':'center', 'color':self.standard_label_color})
+        self.t6 = gui.Label("T6", style={'text-align':'center', 'color':self.standard_label_color})
+        self.s = gui.Label("S", style={'text-align':'center', 'color':self.standard_label_color})
+        self.m = gui.Label("M", style={'text-align':'center', 'color':self.standard_label_color})
+        self.left1 = gui.Label("left1", style={'text-align':'center', 'color':self.standard_label_color})
+        self.left2 = gui.Label("left2", style={'text-align':'center', 'color':self.standard_label_color})
+        self.left3 = gui.Label("left3", style={'text-align':'center', 'color':self.standard_label_color})
+        self.left4 = gui.Label("left4", style={'text-align':'center', 'color':self.standard_label_color})
 
         self.main_container.append(self.pfd, "pfd")
         self.main_container.append(self.t0, "t0")
