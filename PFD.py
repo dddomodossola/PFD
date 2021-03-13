@@ -15,15 +15,20 @@ class AsciiContainer(gui.Container):
         gui.Container.__init__(self, *args, **kwargs)
         self.css_position = 'relative'
         
-    def set_from_ascii_art(self, asciipattern):
+    def set_from_asciiart(self, asciipattern):
         """
         | widget1               |
         | widget1               |
         | widget2 | widget3     |
         """
         pattern_rows = asciipattern.split('\n')
+        # remove empty rows
+        for r in pattern_rows[:]:
+            if len(r.replace(" ", "")) < 1:
+                pattern_rows.remove(r)
+
         layout_height_in_chars = len(pattern_rows)
-        widget_layout_map = {}
+        self.widget_layout_map = {}
         row_index = 0
         for row in pattern_rows:
             row = row.strip()
@@ -36,25 +41,25 @@ class AsciiContainer(gui.Container):
                 widget_key = column.strip()
                 widget_width = float(len(column))
                 
-                if not widget_key in widget_layout_map.keys():
+                if not widget_key in self.widget_layout_map.keys():
                     #width is calculated in percent
                     # height is instead initialized at 1 and incremented by 1 each row the key is present
                     # at the end of algorithm the height will be converted in percent
-                    widget_layout_map[widget_key] = { 'width': "%.2f%%"float(widget_width / (row_width-1) * 100.0), 
+                    self.widget_layout_map[widget_key] = { 'width': "%.2f%%"%float(widget_width / (row_width) * 100.0), 
                                             'height':1, 
-                                            'top':"%.2f%%"float(row_index / (layout_height_in_chars-1) * 100.0), 
-                                            'left':"%.2f%%"float(left_value / (row_width-1) * 100.0)}
+                                            'top':"%.2f%%"%float(row_index / (layout_height_in_chars) * 100.0), 
+                                            'left':"%.2f%%"%float(left_value / (row_width) * 100.0)}
                 else:
-                    widget_layout_map[widget_key]['height'] += 1
+                    self.widget_layout_map[widget_key]['height'] += 1
                 
                 left_value += widget_width
             row_index += 1
 
         #converting height values in percent string
-        for key in widget_layout_map.keys():
-            widget_layout_map[key]['height'] = "%.2f%%"float(widget_layout_map[key]['height'] / (layout_height_in_chars-1) * 100.0) 
+        for key in self.widget_layout_map.keys():
+            self.widget_layout_map[key]['height'] = "%.2f%%"%float(self.widget_layout_map[key]['height'] / (layout_height_in_chars) * 100.0) 
 
-        for key in widget_layout_map.keys():
+        for key in self.widget_layout_map.keys():
             self.set_widget_layout(key)
 
     def append(self, widget, key=''):
@@ -63,6 +68,8 @@ class AsciiContainer(gui.Container):
         return key
 
     def set_widget_layout(self, widget_key):
+        if not ((widget_key in self.children.keys() and (widget_key in self.widget_layout_map.keys()))):
+            return
         self.children[widget_key].css_position = 'absolute'
         self.children[widget_key].set_size(self.widget_layout_map[widget_key]['width'], self.widget_layout_map[widget_key]['height'])
         self.children[widget_key].css_left = self.widget_layout_map[widget_key]['left']
@@ -560,28 +567,26 @@ class Application(App):
     def main(self):
         self.color_flipper = ['orange', 'white']
 
-        self.main_container = gui.Container(width=640, height=360, style={'background-color':'black', 'position':'relative'})
+        self.main_container = AsciiContainer(width=640, height=360, style={'background-color':'black'})
 
-        '''
-        self.main_container = gui.GridBox(width=640, height=360, style={'background-color':'black'})
         self.main_container.set_from_asciiart("""
-        | t0           | t0                                  | t0                                 | t0           |
-        | left1        | pfd                                 | pfd                                | pfd          |
-        | left1        | pfd                                 | pfd                                | pfd          |
-        | left1        | pfd                                 | pfd                                | pfd          |
-        | left2        | pfd                                 | pfd                                | pfd          |
-        | left2        | pfd                                 | pfd                                | pfd          |
-        | left2        | pfd                                 | pfd                                | pfd          |
-        | left3        | pfd                                 | pfd                                | pfd          |
-        | left3        | pfd                                 | pfd                                | pfd          |
-        | left3        | pfd                                 | pfd                                | pfd          |
-        | left4        | pfd                                 | pfd                                | pfd          |
-        | left4        | pfd                                 | pfd                                | pfd          |
-        | left4        | pfd                                 | pfd                                | pfd          |
+        | t0                                                                                                     |
+        | left1        | pfd                                                                                     |
+        | left1        | pfd                                                                                     |
+        | left1        | pfd                                                                                     |
+        | left2        | pfd                                                                                     |
+        | left2        | pfd                                                                                     |
+        | left2        | pfd                                                                                     |
+        | left3        | pfd                                                                                     |
+        | left3        | pfd                                                                                     |
+        | left3        | pfd                                                                                     |
+        | left4        | pfd                                                                                     |
+        | left4        | pfd                                                                                     |
+        | left4        | pfd                                                                                     |
         | s            | m                                   | t5                                 | t6           |
-        | t1           | t1                                  | t1                                 | t1           |
-        """,0,0)
-        '''
+        | t1                                                                                                     |
+        """)
+        
 
         
 
@@ -603,43 +608,18 @@ class Application(App):
         hbox0.append(controls_container)
         """
         h_divisions = 14.0
-        self.pfd = PrimaryFlightDisplay(width="%s%%"%int(91.0/115.0*100), height="%s%%"%int(11.0/h_divisions*100), style={'position':'absolute'})
+        self.pfd = PrimaryFlightDisplay(style={'position':'absolute'})
 
-        self.t0 = gui.Label("T0", width="100%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
-        self.t1 = gui.Label("T1", width="100%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
-        self.t5 = gui.Label("T5", width="25%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
-        self.t6 = gui.Label("T6", width="25%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
-        self.s = gui.Label("S", width="25%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
-        self.m = gui.Label("M", width="25%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
-        self.left1 = gui.Label("left1", width="%s%%"%int(24.0/115.0*100), height="%s%%"%int(3.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
-        self.left2 = gui.Label("left2", width="%s%%"%int(24.0/115.0*100), height="%s%%"%int(3.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
-        self.left3 = gui.Label("left3", width="%s%%"%int(24.0/115.0*100), height="%s%%"%int(3.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
-        self.left4 = gui.Label("left4", width="%s%%"%int(24.0/115.0*100), height="%s%%"%int(3.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
-
-        
-        self.t0.css_left = "0%"
-        self.t0.css_top = "0%"
-        self.pfd.css_left = "%s%%"%int(24.0/115.0*100)
-        self.pfd.css_top = "%s%%"%int(1.0/h_divisions*100)
-        self.left1.css_left = "0%"
-        self.left1.css_top = "%s%%"%int(1.0/h_divisions*100)
-        self.left2.css_left = "0%"
-        self.left2.css_top = "%s%%"%int(4.0/h_divisions*100)
-        self.left3.css_left = "0%"
-        self.left3.css_top = "%s%%"%int(7.0/h_divisions*100)
-        self.left4.css_left = "0%"
-        self.left4.css_top = "%s%%"%int(10.0/h_divisions*100)
-        self.s.css_left = "0%"
-        self.s.css_top = "%s%%"%int(12.0/h_divisions*100)
-        self.m.css_left = "25%"
-        self.m.css_top = "%s%%"%int(12.0/h_divisions*100)
-        self.t5.css_left = "50%"
-        self.t5.css_top = "%s%%"%int(12.0/h_divisions*100)
-        self.t6.css_left = "75%"
-        self.t6.css_top = "%s%%"%int(12.0/h_divisions*100)
-        self.t1.css_left = "0%"
-        self.t1.css_top = "%s%%"%int(13.0/h_divisions*100)
-
+        self.t0 =       gui.Label("T0",     style={'text-align':'center', 'color':self.standard_label_color})
+        self.t1 =       gui.Label("T1",     style={'text-align':'center', 'color':self.standard_label_color})
+        self.t5 =       gui.Label("T5",     style={'text-align':'center', 'color':self.standard_label_color})
+        self.t6 =       gui.Label("T6",     style={'text-align':'center', 'color':self.standard_label_color})
+        self.s =        gui.Label("S",      style={'text-align':'center', 'color':self.standard_label_color})
+        self.m =        gui.Label("M",      style={'text-align':'center', 'color':self.standard_label_color})
+        self.left1 =    gui.Label("left1",  style={'text-align':'center', 'color':self.standard_label_color})
+        self.left2 =    gui.Label("left2",  style={'text-align':'center', 'color':self.standard_label_color})
+        self.left3 =    gui.Label("left3",  style={'text-align':'center', 'color':self.standard_label_color})
+        self.left4 =    gui.Label("left4",  style={'text-align':'center', 'color':self.standard_label_color})
 
         self.main_container.append(self.pfd, "pfd")
         self.main_container.append(self.t0, "t0")
