@@ -4,7 +4,8 @@
 from remi import gui
 from remi import start, App
 import math
-
+import threading
+import time
 
 class TapeVertical(gui.SvgGroup):
     value = 0
@@ -476,20 +477,13 @@ class Application(App):
     color_flipper = None
     standard_label_color = 'orange'
 
+    thread_alive_flag = False
+
+    ab = 0.1
+
     def idle(self):
         #idle function called every update cycle
         #self.svg_group.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.rotation, self.movement)
-        self.pfd.set_attitude_pitch(float(self.slider_pitch.get_value()))
-        self.pfd.set_attitude_orientation(float(self.slider_orientation.get_value()))
-        self.pfd.set_attitude_roll(float(self.slider_roll.get_value()))
-        self.pfd.set_altitude(float(self.slider_altitude.get_value()))
-        self.pfd.set_speed(float(self.slider_speed.get_value()))
-        self.pfd.update_attitude()
-
-        self.s.set_text("Fix3 HDOP: 0.7")
-        self.m.set_text("STABILIZED")
-        self.t1.set_text("Gen: 25.5v")
-        self.t5.set_text("Batt: 23.2V")
 
         #just an example
         battery_is_low = True
@@ -500,10 +494,13 @@ class Application(App):
 
         #swap colors each update
         self.color_flipper = [self.color_flipper[1],self.color_flipper[0]]
-
+        
     def main(self):
         self.color_flipper = ['orange', 'white']
 
+        self.main_container = gui.Container(width=640, height=360, style={'background-color':'black', 'position':'relative'})
+
+        '''
         self.main_container = gui.GridBox(width=640, height=360, style={'background-color':'black'})
         self.main_container.set_from_asciiart("""
         | t0           | t0                                  | t0                                 | t0           |
@@ -522,6 +519,9 @@ class Application(App):
         | s            | m                                   | t5                                 | t6           |
         | t1           | t1                                  | t1                                 | t1           |
         """,0,0)
+        '''
+
+        
 
         w = "95%"
         h = 30
@@ -540,18 +540,44 @@ class Application(App):
 
         hbox0.append(controls_container)
         """
-        self.pfd = PrimaryFlightDisplay(width="100%", height="100%")
+        h_divisions = 14.0
+        self.pfd = PrimaryFlightDisplay(width="%s%%"%int(91.0/115.0*100), height="%s%%"%int(11.0/h_divisions*100), style={'position':'absolute'})
 
-        self.t0 = gui.Label("T0", style={'text-align':'center', 'color':self.standard_label_color})
-        self.t1 = gui.Label("T1", style={'text-align':'center', 'color':self.standard_label_color})
-        self.t5 = gui.Label("T5", style={'text-align':'center', 'color':self.standard_label_color})
-        self.t6 = gui.Label("T6", style={'text-align':'center', 'color':self.standard_label_color})
-        self.s = gui.Label("S", style={'text-align':'center', 'color':self.standard_label_color})
-        self.m = gui.Label("M", style={'text-align':'center', 'color':self.standard_label_color})
-        self.left1 = gui.Label("left1", style={'text-align':'center', 'color':self.standard_label_color})
-        self.left2 = gui.Label("left2", style={'text-align':'center', 'color':self.standard_label_color})
-        self.left3 = gui.Label("left3", style={'text-align':'center', 'color':self.standard_label_color})
-        self.left4 = gui.Label("left4", style={'text-align':'center', 'color':self.standard_label_color})
+        self.t0 = gui.Label("T0", width="100%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
+        self.t1 = gui.Label("T1", width="100%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
+        self.t5 = gui.Label("T5", width="25%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
+        self.t6 = gui.Label("T6", width="25%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
+        self.s = gui.Label("S", width="25%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
+        self.m = gui.Label("M", width="25%", height="%s%%"%int(1.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
+        self.left1 = gui.Label("left1", width="%s%%"%int(24.0/115.0*100), height="%s%%"%int(3.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
+        self.left2 = gui.Label("left2", width="%s%%"%int(24.0/115.0*100), height="%s%%"%int(3.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
+        self.left3 = gui.Label("left3", width="%s%%"%int(24.0/115.0*100), height="%s%%"%int(3.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
+        self.left4 = gui.Label("left4", width="%s%%"%int(24.0/115.0*100), height="%s%%"%int(3.0/h_divisions*100), style={'position':'absolute', 'text-align':'center', 'color':self.standard_label_color})
+
+        
+        self.t0.css_left = "0%"
+        self.t0.css_top = "0%"
+        self.pfd.css_left = "%s%%"%int(24.0/115.0*100)
+        self.pfd.css_top = "%s%%"%int(1.0/h_divisions*100)
+        self.left1.css_left = "0%"
+        self.left1.css_top = "%s%%"%int(1.0/h_divisions*100)
+        self.left2.css_left = "0%"
+        self.left2.css_top = "%s%%"%int(4.0/h_divisions*100)
+        self.left3.css_left = "0%"
+        self.left3.css_top = "%s%%"%int(7.0/h_divisions*100)
+        self.left4.css_left = "0%"
+        self.left4.css_top = "%s%%"%int(10.0/h_divisions*100)
+        self.s.css_left = "0%"
+        self.s.css_top = "%s%%"%int(12.0/h_divisions*100)
+        self.m.css_left = "25%"
+        self.m.css_top = "%s%%"%int(12.0/h_divisions*100)
+        self.t5.css_left = "50%"
+        self.t5.css_top = "%s%%"%int(12.0/h_divisions*100)
+        self.t6.css_left = "75%"
+        self.t6.css_top = "%s%%"%int(12.0/h_divisions*100)
+        self.t1.css_left = "0%"
+        self.t1.css_top = "%s%%"%int(13.0/h_divisions*100)
+
 
         self.main_container.append(self.pfd, "pfd")
         self.main_container.append(self.t0, "t0")
@@ -566,8 +592,52 @@ class Application(App):
         self.main_container.append(self.left4, "left4")
         self.main_container.append(gui.Label('right'), "right")
     
+        # Here I start a parallel thread
+        self.thread_alive_flag = True
+        t = threading.Thread(target=self.my_threaded_function)
+        t.start()
+
         return self.main_container
+
+    def my_threaded_function(self):
+        while self.thread_alive_flag:
+            #calculations
+            self.ab +=0.5
+            if self.ab > 70: self.ab=-70
+
+            pitch=self.ab
+            yaw=self.ab*2
+            roll=self.ab
+            alt=abs(self.ab*1.5+400)
+            speed=abs(self.ab)
+
+            """ WIDGETS MUST BE UPDATED in UPDATE_LOCK CONTEXT
+                    to prevent concurrent thread access on gui elements
+            """
+            with self.update_lock:
+                self.pfd.set_attitude_pitch(float(pitch))
+                self.pfd.set_attitude_orientation(float(yaw))
+                self.pfd.set_attitude_roll(float(roll))
+                self.pfd.set_altitude(float(alt))
+                self.pfd.set_speed(float(speed))
+                self.pfd.update_attitude()
+
+                self.s.set_text("Fix3 HDOP: 0.7")
+                self.m.set_text("STABILIZED")
+                self.t1.set_text("pitch" + str(pitch) + " roll" + str(roll))
+                self.left1.set_text("Gen:   25.5v")
+                self.left2.set_text("TESTING_LONG_STRING")
+                self.left3.set_text("Next line \n here")
+                self.t5.set_text("Batt: 23.2V")
+
+            time.sleep(0.2)
+
+    def on_close(self):
+        """ When app closes, the thread gets stopped
+        """
+        self.thread_alive_flag = False
+        super(MyApp, self).on_close()
 
 
 if __name__ == "__main__":
-    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False)
+    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False, update_interval=0.2)
