@@ -632,7 +632,6 @@ class Application(App):
         self.main_container.append(self.left2, "left2")
         self.main_container.append(self.left3, "left3")
         self.main_container.append(self.left4, "left4")
-        self.main_container.append(gui.Label('right'), "right")
     
         # Here I start a parallel thread
         self.thread_alive_flag = True
