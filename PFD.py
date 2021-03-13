@@ -7,6 +7,68 @@ import math
 import threading
 import time
 
+
+class AsciiContainer(gui.Container):
+    widget_layout_map = None
+
+    def __init__(self, *args, **kwargs):
+        gui.Container.__init__(self, *args, **kwargs)
+        self.css_position = 'relative'
+        
+    def set_from_ascii_art(self, asciipattern):
+        """
+        | widget1               |
+        | widget1               |
+        | widget2 | widget3     |
+        """
+        pattern_rows = asciipattern.split('\n')
+        layout_height_in_chars = len(pattern_rows)
+        widget_layout_map = {}
+        row_index = 0
+        for row in pattern_rows:
+            row = row.strip()
+            row_width = len(row) - row.count('|') #the row width is calculated without pipes
+            row = row[1:-1] #removing |pipes at beginning and end
+            columns = row.split('|')
+
+            left_value = 0
+            for column in columns:
+                widget_key = column.strip()
+                widget_width = float(len(column))
+                
+                if not widget_key in widget_layout_map.keys():
+                    #width is calculated in percent
+                    # height is instead initialized at 1 and incremented by 1 each row the key is present
+                    # at the end of algorithm the height will be converted in percent
+                    widget_layout_map[widget_key] = { 'width': "%.2f%%"float(widget_width / (row_width-1) * 100.0), 
+                                            'height':1, 
+                                            'top':"%.2f%%"float(row_index / (layout_height_in_chars-1) * 100.0), 
+                                            'left':"%.2f%%"float(left_value / (row_width-1) * 100.0)}
+                else:
+                    widget_layout_map[widget_key]['height'] += 1
+                
+                left_value += widget_width
+            row_index += 1
+
+        #converting height values in percent string
+        for key in widget_layout_map.keys():
+            widget_layout_map[key]['height'] = "%.2f%%"float(widget_layout_map[key]['height'] / (layout_height_in_chars-1) * 100.0) 
+
+        for key in widget_layout_map.keys():
+            self.set_widget_layout(key)
+
+    def append(self, widget, key=''):
+        key = gui.Container.append(self, widget, key)
+        self.set_widget_layout(key)
+        return key
+
+    def set_widget_layout(self, widget_key):
+        self.children[widget_key].css_position = 'absolute'
+        self.children[widget_key].set_size(self.widget_layout_map[widget_key]['width'], self.widget_layout_map[widget_key]['height'])
+        self.children[widget_key].css_left = self.widget_layout_map[widget_key]['left']
+        self.children[widget_key].css_top = self.widget_layout_map[widget_key]['top']
+
+
 class TapeVertical(gui.SvgGroup):
     value = 0
     scale_length = 1000
