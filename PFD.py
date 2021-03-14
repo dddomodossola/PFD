@@ -79,6 +79,56 @@ class AsciiContainer(gui.Container):
         self.children[widget_key].css_top = self.widget_layout_map[widget_key]['top']
 
 
+class SimpleVSI(gui.SvgGroup):
+    value = 0
+
+    def __init__(self, x_pos, y_pos, wide, high, *args, **kwargs):
+        """ x_pos and y_pos are coordinates indicated by the pointer, generally at the center of the shown tape
+        """
+        gui.SvgGroup.__init__(self, *args, **kwargs)
+
+        self.wide = wide
+        self.high = high
+
+        self.attributes['transform'] = 'translate(%s %s)'%(x_pos, y_pos)
+
+        #it is used a subcontainer in order to show only a part of the entire tape
+        self.subcontainer = gui.SvgSubcontainer(-self.wide, -self.high/2, wide, high)
+        self.subcontainer.set_viewbox(-self.wide/2, -self.high/2, wide, self.high)
+        self.append(self.subcontainer)
+
+        vertical_line_width = self.wide/20
+        scale_vertical_line = gui.SvgLine(-self.wide/2, -self.high/2, -self.wide/2, self.high)
+        scale_vertical_line.set_stroke(vertical_line_width, 'lightgray')
+        self.subcontainer.append(scale_vertical_line)
+
+        self.pointer_line = gui.SvgLine(self.wide/2, 0, -self.wide/2, self.value*(self.high/2))
+        self.pointer_line.set_stroke(self.wide/20, 'lightgray')
+        self.subcontainer.append(self.pointer_line)
+
+        self.value_max = gui.SvgText(-self.wide/2 + vertical_line_width, -self.high/2, "10")
+        self.value_max.attr_dominant_baseline = 'hanging'
+        self.value_max.attr_text_anchor = 'start'
+        self.value_max.set_fill('white')
+        self.value_max.css_font_size = gui.to_pix(0.3*self.wide)
+        self.value_max.css_font_weight = 'bolder'
+        #self.value_max.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.subcontainer.append(self.value_max)
+
+        self.value_min = gui.SvgText(-self.wide/2 + vertical_line_width, self.high/2, "-10")
+        self.value_min.attr_dominant_baseline = 'ideographic'
+        self.value_min.attr_text_anchor = 'start'
+        self.value_min.set_fill('white')
+        self.value_min.css_font_size = gui.to_pix(0.3*self.wide)
+        self.value_min.css_font_weight = 'bolder'
+        #self.value_min.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.subcontainer.append(self.value_min)
+
+    def set_value(self, value):
+        self.value = value
+        self.pointer_line.set_coords(self.wide/2, 0, -self.wide/2, self.value*(self.high/2)/10)
+        
+
 class TapeVertical(gui.SvgGroup):
     value = 0
     scale_length = 1000
@@ -189,8 +239,7 @@ class TapeVertical(gui.SvgGroup):
                 txt.css_font_weight = 'bolder'
                 self.group_scale.append(txt)"""
         self.group_scale.add_child('content', content)
-        
-        
+                
     def set_value(self, value):
         self.value = value
         self.pointer_value.set_text("%d"%self.value)
@@ -265,17 +314,18 @@ class OrientationTapeHorizontal(gui.SvgGroup):
         #self.orientation_pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.orientation_pointer)
 
-        orientation_value = gui.SvgText(0, -0.03*high, "%d"%(self.orientation%360))
-        orientation_value.attr_dominant_baseline = 'auto'
-        orientation_value.attr_text_anchor = 'middle'
-        orientation_value.set_fill('white')
-        orientation_value.css_font_size = gui.to_pix(0.03*self.scale_length_visible)
-        orientation_value.css_font_weight = 'bolder'
+        self.orientation_value = gui.SvgText(0, -0.03*high, "%d"%(self.orientation%360))
+        self.orientation_value.attr_dominant_baseline = 'auto'
+        self.orientation_value.attr_text_anchor = 'middle'
+        self.orientation_value.set_fill('white')
+        self.orientation_value.css_font_size = gui.to_pix(0.03*self.scale_length_visible)
+        self.orientation_value.css_font_weight = 'bolder'
         #orientation_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
-        self.append(orientation_value)
+        self.append(self.orientation_value)
         
     def set_orientation(self, value):
         self.orientation = value
+        self.orientation_value.set_text("%d"%(self.orientation%360))
         self.subcontainer.set_viewbox(-self.scale_length_visible/2 + self.orientation, 0, self.scale_length_visible, self.high*(self.high/self.wide))
 
 
@@ -519,7 +569,7 @@ class PrimaryFlightDisplay(gui.Svg):
         self.append(self.altitude_indicator)
 
         #x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible
-        self.VSI_indicator = TapeVertical(75, 0, 10, 50, False, 100, 30)
+        self.VSI_indicator = SimpleVSI(85, 0, 10, 50)
         self.append(self.VSI_indicator)
 
     def set_attitude_pitch(self, value):
@@ -650,6 +700,7 @@ class Application(App):
         return centering_container
 
     def my_threaded_function(self):
+        incrementa_number_for_testing = 0
         while self.thread_alive_flag:
             #calculations
             self.ab +=0.5
@@ -670,6 +721,7 @@ class Application(App):
                 self.pfd.set_attitude_roll(float(roll))
                 self.pfd.set_altitude(float(alt))
                 self.pfd.set_speed(float(speed))
+                self.pfd.set_VSI( math.sin(math.radians(incrementa_number_for_testing%360))*10 )
                 self.pfd.update_attitude()
 
                 self.s.set_text("Fix3 HDOP: 0.7")
@@ -680,6 +732,7 @@ class Application(App):
                 self.left3.set_text("Next line \n here")
                 self.t5.set_text("Batt: 23.2V")
 
+            incrementa_number_for_testing += 1
             time.sleep(0.2)
 
     def on_close(self):
