@@ -15,11 +15,14 @@ class AsciiContainer(gui.Container):
         gui.Container.__init__(self, *args, **kwargs)
         self.css_position = 'relative'
         
-    def set_from_asciiart(self, asciipattern):
+    def set_from_asciiart(self, asciipattern, gap_horizontal=0, gap_vertical=0):
         """
-        | widget1               |
-        | widget1               |
-        | widget2 | widget3     |
+            asciipattern (str): a multiline string representing the layout
+                | widget1               |
+                | widget1               |
+                | widget2 | widget3     |
+            gap_horizontal (int): a percent value
+            gap_vertical (int): a percent value
         """
         pattern_rows = asciipattern.split('\n')
         # remove empty rows
@@ -45,10 +48,10 @@ class AsciiContainer(gui.Container):
                     #width is calculated in percent
                     # height is instead initialized at 1 and incremented by 1 each row the key is present
                     # at the end of algorithm the height will be converted in percent
-                    self.widget_layout_map[widget_key] = { 'width': "%.2f%%"%float(widget_width / (row_width) * 100.0), 
+                    self.widget_layout_map[widget_key] = { 'width': "%.2f%%"%float(widget_width / (row_width) * 100.0 - gap_horizontal), 
                                             'height':1, 
-                                            'top':"%.2f%%"%float(row_index / (layout_height_in_chars) * 100.0), 
-                                            'left':"%.2f%%"%float(left_value / (row_width) * 100.0)}
+                                            'top':"%.2f%%"%float(row_index / (layout_height_in_chars) * 100.0 + (gap_vertical/2.0)), 
+                                            'left':"%.2f%%"%float(left_value / (row_width) * 100.0 + (gap_horizontal/2.0))}
                 else:
                     self.widget_layout_map[widget_key]['height'] += 1
                 
@@ -57,7 +60,7 @@ class AsciiContainer(gui.Container):
 
         #converting height values in percent string
         for key in self.widget_layout_map.keys():
-            self.widget_layout_map[key]['height'] = "%.2f%%"%float(self.widget_layout_map[key]['height'] / (layout_height_in_chars) * 100.0) 
+            self.widget_layout_map[key]['height'] = "%.2f%%"%float(self.widget_layout_map[key]['height'] / (layout_height_in_chars) * 100.0 - gap_vertical) 
 
         for key in self.widget_layout_map.keys():
             self.set_widget_layout(key)
@@ -567,7 +570,12 @@ class Application(App):
     def main(self):
         self.color_flipper = ['orange', 'white']
 
-        self.main_container = AsciiContainer(width=640, height=360, style={'background-color':'black'})
+        centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"fixed"})
+
+        #to make a left margin or 50px (because of google glasses curvature), I have to calculate a new height
+        _w_margin  = 50
+        _h_margin = _w_margin*360/640
+        self.main_container = AsciiContainer(width=640-_w_margin, height=360-_h_margin, style={'background-color':'black','margin-left':gui.to_pix(_w_margin), 'margin-top':gui.to_pix(_h_margin/2)})
 
         self.main_container.set_from_asciiart("""
         | t0                                                                                                     |
@@ -585,7 +593,7 @@ class Application(App):
         | left4        | pfd                                                                                     |
         | s            | m                                   | t5                                 | t6           |
         | t1                                                                                                     |
-        """)
+        """, gap_horizontal=0, gap_vertical=0)
         
 
         
@@ -609,17 +617,17 @@ class Application(App):
         """
         h_divisions = 14.0
         self.pfd = PrimaryFlightDisplay(style={'position':'absolute'})
-
-        self.t0 =       gui.Label("T0",     style={'text-align':'center', 'color':self.standard_label_color})
-        self.t1 =       gui.Label("T1",     style={'text-align':'center', 'color':self.standard_label_color})
-        self.t5 =       gui.Label("T5",     style={'text-align':'center', 'color':self.standard_label_color})
-        self.t6 =       gui.Label("T6",     style={'text-align':'center', 'color':self.standard_label_color})
-        self.s =        gui.Label("S",      style={'text-align':'center', 'color':self.standard_label_color})
-        self.m =        gui.Label("M",      style={'text-align':'center', 'color':self.standard_label_color})
-        self.left1 =    gui.Label("left1",  style={'text-align':'center', 'color':self.standard_label_color})
-        self.left2 =    gui.Label("left2",  style={'text-align':'center', 'color':self.standard_label_color})
-        self.left3 =    gui.Label("left3",  style={'text-align':'center', 'color':self.standard_label_color})
-        self.left4 =    gui.Label("left4",  style={'text-align':'center', 'color':self.standard_label_color})
+        _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black'}
+        self.t0 =       gui.Label("T0",     style=_style)
+        self.t1 =       gui.Label("T1",     style=_style)
+        self.t5 =       gui.Label("T5",     style=_style)
+        self.t6 =       gui.Label("T6",     style=_style)
+        self.s =        gui.Label("S",      style=_style)
+        self.m =        gui.Label("M",      style=_style)
+        self.left1 =    gui.Label("left1",  style=_style)
+        self.left2 =    gui.Label("left2",  style=_style)
+        self.left3 =    gui.Label("left3",  style=_style)
+        self.left4 =    gui.Label("left4",  style=_style)
 
         self.main_container.append(self.pfd, "pfd")
         self.main_container.append(self.t0, "t0")
@@ -638,7 +646,8 @@ class Application(App):
         t = threading.Thread(target=self.my_threaded_function)
         t.start()
 
-        return self.main_container
+        centering_container.append(self.main_container)
+        return centering_container
 
     def my_threaded_function(self):
         while self.thread_alive_flag:
