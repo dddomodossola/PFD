@@ -15,11 +15,14 @@ class AsciiContainer(gui.Container):
         gui.Container.__init__(self, *args, **kwargs)
         self.css_position = 'relative'
         
-    def set_from_asciiart(self, asciipattern):
+    def set_from_asciiart(self, asciipattern, gap_horizontal=0, gap_vertical=0):
         """
-        | widget1               |
-        | widget1               |
-        | widget2 | widget3     |
+            asciipattern (str): a multiline string representing the layout
+                | widget1               |
+                | widget1               |
+                | widget2 | widget3     |
+            gap_horizontal (int): a percent value
+            gap_vertical (int): a percent value
         """
         pattern_rows = asciipattern.split('\n')
         # remove empty rows
@@ -45,10 +48,10 @@ class AsciiContainer(gui.Container):
                     #width is calculated in percent
                     # height is instead initialized at 1 and incremented by 1 each row the key is present
                     # at the end of algorithm the height will be converted in percent
-                    self.widget_layout_map[widget_key] = { 'width': "%.2f%%"%float(widget_width / (row_width) * 100.0), 
+                    self.widget_layout_map[widget_key] = { 'width': "%.2f%%"%float(widget_width / (row_width) * 100.0 - gap_horizontal), 
                                             'height':1, 
-                                            'top':"%.2f%%"%float(row_index / (layout_height_in_chars) * 100.0), 
-                                            'left':"%.2f%%"%float(left_value / (row_width) * 100.0)}
+                                            'top':"%.2f%%"%float(row_index / (layout_height_in_chars) * 100.0 + (gap_vertical/2.0)), 
+                                            'left':"%.2f%%"%float(left_value / (row_width) * 100.0 + (gap_horizontal/2.0))}
                 else:
                     self.widget_layout_map[widget_key]['height'] += 1
                 
@@ -57,7 +60,7 @@ class AsciiContainer(gui.Container):
 
         #converting height values in percent string
         for key in self.widget_layout_map.keys():
-            self.widget_layout_map[key]['height'] = "%.2f%%"%float(self.widget_layout_map[key]['height'] / (layout_height_in_chars) * 100.0) 
+            self.widget_layout_map[key]['height'] = "%.2f%%"%float(self.widget_layout_map[key]['height'] / (layout_height_in_chars) * 100.0 - gap_vertical) 
 
         for key in self.widget_layout_map.keys():
             self.set_widget_layout(key)
@@ -75,6 +78,56 @@ class AsciiContainer(gui.Container):
         self.children[widget_key].css_left = self.widget_layout_map[widget_key]['left']
         self.children[widget_key].css_top = self.widget_layout_map[widget_key]['top']
 
+
+class SimpleVSI(gui.SvgGroup):
+    value = 0
+
+    def __init__(self, x_pos, y_pos, wide, high, *args, **kwargs):
+        """ x_pos and y_pos are coordinates indicated by the pointer, generally at the center of the shown tape
+        """
+        gui.SvgGroup.__init__(self, *args, **kwargs)
+
+        self.wide = wide
+        self.high = high
+
+        self.attributes['transform'] = 'translate(%s %s)'%(x_pos, y_pos)
+
+        #it is used a subcontainer in order to show only a part of the entire tape
+        self.subcontainer = gui.SvgSubcontainer(-self.wide, -self.high/2, wide, high)
+        self.subcontainer.set_viewbox(-self.wide/2, -self.high/2, wide, self.high)
+        self.append(self.subcontainer)
+
+        vertical_line_width = self.wide/20
+        scale_vertical_line = gui.SvgLine(-self.wide/2, -self.high/2, -self.wide/2, self.high)
+        scale_vertical_line.set_stroke(vertical_line_width, 'lightgray')
+        self.subcontainer.append(scale_vertical_line)
+
+        self.pointer_line = gui.SvgLine(self.wide/2, 0, -self.wide/2, self.value*(self.high/2))
+        self.pointer_line.set_stroke(self.wide/20, 'lightgray')
+        self.subcontainer.append(self.pointer_line)
+
+        self.value_max = gui.SvgText(-self.wide/2 + vertical_line_width, -self.high/2, "10")
+        self.value_max.attr_dominant_baseline = 'hanging'
+        self.value_max.attr_text_anchor = 'start'
+        self.value_max.set_fill('white')
+        self.value_max.css_font_size = gui.to_pix(0.3*self.wide)
+        self.value_max.css_font_weight = 'bolder'
+        #self.value_max.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.subcontainer.append(self.value_max)
+
+        self.value_min = gui.SvgText(-self.wide/2 + vertical_line_width, self.high/2, "-10")
+        self.value_min.attr_dominant_baseline = 'ideographic'
+        self.value_min.attr_text_anchor = 'start'
+        self.value_min.set_fill('white')
+        self.value_min.css_font_size = gui.to_pix(0.3*self.wide)
+        self.value_min.css_font_weight = 'bolder'
+        #self.value_min.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
+        self.subcontainer.append(self.value_min)
+
+    def set_value(self, value):
+        self.value = value
+        self.pointer_line.set_coords(self.wide/2, 0, -self.wide/2, self.value*(self.high/2)/10)
+        
 
 class TapeVertical(gui.SvgGroup):
     value = 0
@@ -186,8 +239,7 @@ class TapeVertical(gui.SvgGroup):
                 txt.css_font_weight = 'bolder'
                 self.group_scale.append(txt)"""
         self.group_scale.add_child('content', content)
-        
-        
+                
     def set_value(self, value):
         self.value = value
         self.pointer_value.set_text("%d"%self.value)
@@ -262,17 +314,18 @@ class OrientationTapeHorizontal(gui.SvgGroup):
         #self.orientation_pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.orientation_pointer)
 
-        orientation_value = gui.SvgText(0, -0.03*high, "%d"%(self.orientation%360))
-        orientation_value.attr_dominant_baseline = 'auto'
-        orientation_value.attr_text_anchor = 'middle'
-        orientation_value.set_fill('white')
-        orientation_value.css_font_size = gui.to_pix(0.03*self.scale_length_visible)
-        orientation_value.css_font_weight = 'bolder'
+        self.orientation_value = gui.SvgText(0, -0.03*high, "%d"%(self.orientation%360))
+        self.orientation_value.attr_dominant_baseline = 'auto'
+        self.orientation_value.attr_text_anchor = 'middle'
+        self.orientation_value.set_fill('white')
+        self.orientation_value.css_font_size = gui.to_pix(0.03*self.scale_length_visible)
+        self.orientation_value.css_font_weight = 'bolder'
         #orientation_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
-        self.append(orientation_value)
+        self.append(self.orientation_value)
         
     def set_orientation(self, value):
         self.orientation = value
+        self.orientation_value.set_text("%d"%(self.orientation%360))
         self.subcontainer.set_viewbox(-self.scale_length_visible/2 + self.orientation, 0, self.scale_length_visible, self.high*(self.high/self.wide))
 
 
@@ -516,7 +569,7 @@ class PrimaryFlightDisplay(gui.Svg):
         self.append(self.altitude_indicator)
 
         #x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible
-        self.VSI_indicator = TapeVertical(75, 0, 10, 50, False, 100, 30)
+        self.VSI_indicator = SimpleVSI(85, 0, 10, 50)
         self.append(self.VSI_indicator)
 
     def set_attitude_pitch(self, value):
@@ -548,6 +601,8 @@ class Application(App):
 
     thread_alive_flag = False
 
+    INOP_condition = True
+
     ab = 0.1
 
     def idle(self):
@@ -561,13 +616,23 @@ class Application(App):
         else:
             self.t5.css_color = self.standard_label_color
 
+        if self.INOP_condition:
+            self.centering_container.css_background_color = {'red':'black', 'black':'red'}[self.centering_container.css_background_color]
+        else:
+            self.centering_container.css_background_color = 'black'
+
         #swap colors each update
         self.color_flipper = [self.color_flipper[1],self.color_flipper[0]]
         
     def main(self):
         self.color_flipper = ['orange', 'white']
 
-        self.main_container = AsciiContainer(width=640, height=360, style={'background-color':'black'})
+        self.centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"fixed"})
+
+        #to make a left margin or 50px (because of google glasses curvature), I have to calculate a new height
+        _w_margin  = 50
+        _h_margin = _w_margin*360/640
+        self.main_container = AsciiContainer(width=640-_w_margin, height=360-_h_margin, style={'background-color':'transparent', 'margin-left':gui.to_pix(_w_margin), 'margin-top':gui.to_pix(_h_margin/2)})
 
         self.main_container.set_from_asciiart("""
         | t0                                                                                                     |
@@ -585,7 +650,7 @@ class Application(App):
         | left4        | pfd                                                                                     |
         | s            | m                                   | t5                                 | t6           |
         | t1                                                                                                     |
-        """)
+        """, gap_horizontal=0, gap_vertical=0)
         
 
         
@@ -609,17 +674,17 @@ class Application(App):
         """
         h_divisions = 14.0
         self.pfd = PrimaryFlightDisplay(style={'position':'absolute'})
-
-        self.t0 =       gui.Label("T0",     style={'text-align':'center', 'color':self.standard_label_color})
-        self.t1 =       gui.Label("T1",     style={'text-align':'center', 'color':self.standard_label_color})
-        self.t5 =       gui.Label("T5",     style={'text-align':'center', 'color':self.standard_label_color})
-        self.t6 =       gui.Label("T6",     style={'text-align':'center', 'color':self.standard_label_color})
-        self.s =        gui.Label("S",      style={'text-align':'center', 'color':self.standard_label_color})
-        self.m =        gui.Label("M",      style={'text-align':'center', 'color':self.standard_label_color})
-        self.left1 =    gui.Label("left1",  style={'text-align':'center', 'color':self.standard_label_color})
-        self.left2 =    gui.Label("left2",  style={'text-align':'center', 'color':self.standard_label_color})
-        self.left3 =    gui.Label("left3",  style={'text-align':'center', 'color':self.standard_label_color})
-        self.left4 =    gui.Label("left4",  style={'text-align':'center', 'color':self.standard_label_color})
+        _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black'}
+        self.t0 =       gui.Label("T0",     style=_style)
+        self.t1 =       gui.Label("T1",     style=_style)
+        self.t5 =       gui.Label("T5",     style=_style)
+        self.t6 =       gui.Label("T6",     style=_style)
+        self.s =        gui.Label("S",      style=_style)
+        self.m =        gui.Label("M",      style=_style)
+        self.left1 =    gui.Label("left1",  style=_style)
+        self.left2 =    gui.Label("left2",  style=_style)
+        self.left3 =    gui.Label("left3",  style=_style)
+        self.left4 =    gui.Label("left4",  style=_style)
 
         self.main_container.append(self.pfd, "pfd")
         self.main_container.append(self.t0, "t0")
@@ -638,9 +703,11 @@ class Application(App):
         t = threading.Thread(target=self.my_threaded_function)
         t.start()
 
-        return self.main_container
+        self.centering_container.append(self.main_container)
+        return self.centering_container
 
     def my_threaded_function(self):
+        incrementa_number_for_testing = 0
         while self.thread_alive_flag:
             #calculations
             self.ab +=0.5
@@ -661,6 +728,7 @@ class Application(App):
                 self.pfd.set_attitude_roll(float(roll))
                 self.pfd.set_altitude(float(alt))
                 self.pfd.set_speed(float(speed))
+                self.pfd.set_VSI( math.sin(math.radians(incrementa_number_for_testing%360))*10 )
                 self.pfd.update_attitude()
 
                 self.s.set_text("Fix3 HDOP: 0.7")
@@ -671,6 +739,7 @@ class Application(App):
                 self.left3.set_text("Next line \n here")
                 self.t5.set_text("Batt: 23.2V")
 
+            incrementa_number_for_testing += 1
             time.sleep(0.2)
 
     def on_close(self):
