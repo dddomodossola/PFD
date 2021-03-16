@@ -674,7 +674,7 @@ class Application(App):
         """
         h_divisions = 14.0
         self.pfd = PrimaryFlightDisplay(style={'position':'absolute'})
-        _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black'}
+        _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black', 'font-size':'14px'}
         self.t0 =       gui.Label("T0",     style=_style)
         self.t1 =       gui.Label("T1",     style=_style)
         self.t5 =       gui.Label("T5",     style=_style)
