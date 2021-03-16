@@ -144,7 +144,14 @@ class TapeVertical(gui.SvgGroup):
 
     indicator_size = 0
 
-    def __init__(self, x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible, *args, **kwargs):
+    tape_white_min = 0
+    tape_white_max = 0
+
+    tape_green_min = 0
+    tape_green_max = 0
+
+
+    def __init__(self, x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible, tape_white_min=0, tape_white_max=0, tape_green_min=0, tape_green_max=0, *args, **kwargs):
         """ x_pos and y_pos are coordinates indicated by the pointer, generally at the center of the shown tape
         """
         gui.SvgGroup.__init__(self, *args, **kwargs)
@@ -157,6 +164,12 @@ class TapeVertical(gui.SvgGroup):
 
         self.indicator_size = self.wide*0.2
         self.left_side = left_side
+
+        self.tape_white_min = tape_white_min 
+        self.tape_white_max = tape_white_max
+
+        self.tape_green_min = tape_green_min
+        self.tape_green_max = tape_green_max
         
         self.attributes['transform'] = 'translate(%s %s)'%(x_pos, y_pos)
 
@@ -200,21 +213,36 @@ class TapeVertical(gui.SvgGroup):
         #self.pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.pointer_value)
 
+        if self.tape_green_max > 0:
+            green_and_red_tape_width = self.wide
+            white_tape_width = 3
+            tape_green = gui.SvgRectangle(-self.wide/2, -self.tape_green_max, green_and_red_tape_width, (self.tape_green_max-self.tape_green_min))
+            tape_green.set_fill('green')
+            self.group_scale.add_child('tape_green', tape_green)
+        if self.tape_white_max > 0:
+            tape_white = gui.SvgRectangle((self.wide/2-white_tape_width if self.left_side else -self.wide/2), -self.tape_white_max, white_tape_width, (self.tape_white_max-self.tape_white_min))
+            tape_white.set_fill('white')
+            self.group_scale.add_child('tape_white', tape_white)
+        if self.tape_green_max > 0:
+            tape_red = gui.SvgRectangle(-self.wide/2, -self.scale_length, green_and_red_tape_width, (self.scale_length-self.tape_green_max))
+            tape_red.set_fill('red')
+            self.group_scale.add_child('tape_red', tape_red)
+
     def build_scale(self):
-        self.group_scale.empty()
+        #self.group_scale.empty()
 
         #horizontal line along all the tape size
         x = self.wide/2 if self.left_side else -self.wide/2
         line = gui.SvgLine(x, -self.value-self.scale_length_visible/2, x, -self.value+self.scale_length_visible/2)
         line.set_stroke(0.1*self.wide, 'gray')
-        self.group_scale.append(line)
+        self.group_scale.append(line, "line")
 
         #creating labels
         labels = {}
         labels_size = {}
         step = 10
         for i in range(int(self.value/step -1 -(self.scale_length_visible/step)/2), int(self.value/step + (self.scale_length_visible/step)/2+1)):
-            if not i*step in labels.keys():
+            if not i*step in labels.keys() and i*step>=0:
                 labels[i*step] = "%d"%(i*step) 
                 labels_size[i*step] = 1.0
 
@@ -562,7 +590,7 @@ class PrimaryFlightDisplay(gui.Svg):
         self.attitude_indicator = AttitudeIndicator()
         self.append(self.attitude_indicator)
 
-        self.speed_indicator = TapeVertical(-51, 0, 20, 80, True, 999, 100) #three digits values
+        self.speed_indicator = TapeVertical(-51, 0, 20, 80, True, 999, 100, 12, 40, 25, 68) #three digits values
         self.append(self.speed_indicator)
 
         self.altitude_indicator = TapeVertical(51, 0, 20, 80, False, 9999, 100) #four digits values
