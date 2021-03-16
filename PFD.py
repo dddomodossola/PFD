@@ -106,7 +106,7 @@ class SimpleVSI(gui.SvgGroup):
         self.pointer_line.set_stroke(self.wide/20, 'lightgray')
         self.subcontainer.append(self.pointer_line)
 
-        self.value_max = gui.SvgText(-self.wide/2 + vertical_line_width, -self.high/2, "-10")
+        self.value_max = gui.SvgText(-self.wide/2 + vertical_line_width, -self.high/2, "10")
         self.value_max.attr_dominant_baseline = 'hanging'
         self.value_max.attr_text_anchor = 'start'
         self.value_max.set_fill('white')
@@ -115,7 +115,7 @@ class SimpleVSI(gui.SvgGroup):
         #self.value_max.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.subcontainer.append(self.value_max)
 
-        self.value_min = gui.SvgText(-self.wide/2 + vertical_line_width, self.high/2, "10")
+        self.value_min = gui.SvgText(-self.wide/2 + vertical_line_width, self.high/2, "-10")
         self.value_min.attr_dominant_baseline = 'ideographic'
         self.value_min.attr_text_anchor = 'start'
         self.value_min.set_fill('white')
@@ -126,7 +126,7 @@ class SimpleVSI(gui.SvgGroup):
 
     def set_value(self, value):
         self.value = value
-        self.pointer_line.set_coords(self.wide/2, 0, -self.wide/2, self.value*(self.high/2)/10)
+        self.pointer_line.set_coords(self.wide/2, 0, -self.wide/2, -self.value*(self.high/2)/10)
         
 
 class TapeVertical(gui.SvgGroup):
@@ -144,7 +144,14 @@ class TapeVertical(gui.SvgGroup):
 
     indicator_size = 0
 
-    def __init__(self, x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible, *args, **kwargs):
+    tape_white_min = 0
+    tape_white_max = 0
+
+    tape_green_min = 0
+    tape_green_max = 0
+
+
+    def __init__(self, x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible, tape_white_min=0, tape_white_max=0, tape_green_min=0, tape_green_max=0, *args, **kwargs):
         """ x_pos and y_pos are coordinates indicated by the pointer, generally at the center of the shown tape
         """
         gui.SvgGroup.__init__(self, *args, **kwargs)
@@ -157,6 +164,12 @@ class TapeVertical(gui.SvgGroup):
 
         self.indicator_size = self.wide*0.2
         self.left_side = left_side
+
+        self.tape_white_min = tape_white_min 
+        self.tape_white_max = tape_white_max
+
+        self.tape_green_min = tape_green_min
+        self.tape_green_max = tape_green_max
         
         self.attributes['transform'] = 'translate(%s %s)'%(x_pos, y_pos)
 
@@ -200,21 +213,36 @@ class TapeVertical(gui.SvgGroup):
         #self.pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.pointer_value)
 
+        if self.tape_green_max > 0:
+            green_and_red_tape_width = self.wide
+            white_tape_width = 3
+            tape_green = gui.SvgRectangle(-self.wide/2, -self.tape_green_max, green_and_red_tape_width, (self.tape_green_max-self.tape_green_min))
+            tape_green.set_fill('green')
+            self.group_scale.add_child('tape_green', tape_green)
+        if self.tape_white_max > 0:
+            tape_white = gui.SvgRectangle((self.wide/2-white_tape_width if self.left_side else -self.wide/2), -self.tape_white_max, white_tape_width, (self.tape_white_max-self.tape_white_min))
+            tape_white.set_fill('white')
+            self.group_scale.add_child('tape_white', tape_white)
+        if self.tape_green_max > 0:
+            tape_red = gui.SvgRectangle(-self.wide/2, -self.scale_length, green_and_red_tape_width, (self.scale_length-self.tape_green_max))
+            tape_red.set_fill('red')
+            self.group_scale.add_child('tape_red', tape_red)
+
     def build_scale(self):
-        self.group_scale.empty()
+        #self.group_scale.empty()
 
         #horizontal line along all the tape size
         x = self.wide/2 if self.left_side else -self.wide/2
         line = gui.SvgLine(x, -self.value-self.scale_length_visible/2, x, -self.value+self.scale_length_visible/2)
         line.set_stroke(0.1*self.wide, 'gray')
-        self.group_scale.append(line)
+        self.group_scale.append(line, "line")
 
         #creating labels
         labels = {}
         labels_size = {}
         step = 10
         for i in range(int(self.value/step -1 -(self.scale_length_visible/step)/2), int(self.value/step + (self.scale_length_visible/step)/2+1)):
-            if not i*step in labels.keys():
+            if not i*step in labels.keys() and i*step>=0:
                 labels[i*step] = "%d"%(i*step) 
                 labels_size[i*step] = 1.0
 
@@ -562,7 +590,7 @@ class PrimaryFlightDisplay(gui.Svg):
         self.attitude_indicator = AttitudeIndicator()
         self.append(self.attitude_indicator)
 
-        self.speed_indicator = TapeVertical(-51, 0, 20, 80, True, 999, 100) #three digits values
+        self.speed_indicator = TapeVertical(-51, 0, 20, 80, True, 999, 100, 12, 40, 25, 68) #three digits values
         self.append(self.speed_indicator)
 
         self.altitude_indicator = TapeVertical(51, 0, 20, 80, False, 9999, 100) #four digits values
@@ -627,12 +655,12 @@ class Application(App):
     def main(self):
         self.color_flipper = ['orange', 'white']
 
-        self.centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"fixed"})
+        self.centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"absolute"})
 
         #to make a left margin or 50px (because of google glasses curvature), I have to calculate a new height
         _w_margin  = 50
         _h_margin = _w_margin*360/640
-        self.main_container = AsciiContainer(width=640-_w_margin, height=360-_h_margin, style={'background-color':'transparent', 'margin-left':gui.to_pix(_w_margin), 'margin-top':gui.to_pix(_h_margin/2)})
+        self.main_container = AsciiContainer(width=640-_w_margin, height=360-_h_margin, style={'background-color':'transparent', 'position':'relative', 'margin-left':gui.to_pix(_w_margin), 'margin-top':gui.to_pix(_h_margin/2)})
 
         self.main_container.set_from_asciiart("""
         | t0                                                                                                     |
@@ -673,7 +701,7 @@ class Application(App):
         hbox0.append(controls_container)
         """
         h_divisions = 14.0
-        self.pfd = PrimaryFlightDisplay(style={'position':'absolute'})
+        self.pfd = PrimaryFlightDisplay(style={'position':'relative'})
         _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black', 'font-size':'14px'}
         self.t0 =       gui.Label("T0",     style=_style)
         self.t1 =       gui.Label("T1",     style=_style)
