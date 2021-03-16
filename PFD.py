@@ -655,12 +655,12 @@ class Application(App):
     def main(self):
         self.color_flipper = ['orange', 'white']
 
-        self.centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"fixed"})
+        self.centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"absolute"})
 
         #to make a left margin or 50px (because of google glasses curvature), I have to calculate a new height
         _w_margin  = 50
         _h_margin = _w_margin*360/640
-        self.main_container = AsciiContainer(width=640-_w_margin, height=360-_h_margin, style={'background-color':'transparent', 'margin-left':gui.to_pix(_w_margin), 'margin-top':gui.to_pix(_h_margin/2)})
+        self.main_container = AsciiContainer(width=640-_w_margin, height=360-_h_margin, style={'background-color':'transparent', 'position':'relative', 'margin-left':gui.to_pix(_w_margin), 'margin-top':gui.to_pix(_h_margin/2)})
 
         self.main_container.set_from_asciiart("""
         | t0                                                                                                     |
@@ -701,7 +701,7 @@ class Application(App):
         hbox0.append(controls_container)
         """
         h_divisions = 14.0
-        self.pfd = PrimaryFlightDisplay(style={'position':'absolute'})
+        self.pfd = PrimaryFlightDisplay(style={'position':'relative'})
         _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black', 'font-size':'14px'}
         self.t0 =       gui.Label("T0",     style=_style)
         self.t1 =       gui.Label("T1",     style=_style)
