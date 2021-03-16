@@ -106,7 +106,7 @@ class SimpleVSI(gui.SvgGroup):
         self.pointer_line.set_stroke(self.wide/20, 'lightgray')
         self.subcontainer.append(self.pointer_line)
 
-        self.value_max = gui.SvgText(-self.wide/2 + vertical_line_width, -self.high/2, "-10")
+        self.value_max = gui.SvgText(-self.wide/2 + vertical_line_width, -self.high/2, "10")
         self.value_max.attr_dominant_baseline = 'hanging'
         self.value_max.attr_text_anchor = 'start'
         self.value_max.set_fill('white')
@@ -115,7 +115,7 @@ class SimpleVSI(gui.SvgGroup):
         #self.value_max.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.subcontainer.append(self.value_max)
 
-        self.value_min = gui.SvgText(-self.wide/2 + vertical_line_width, self.high/2, "10")
+        self.value_min = gui.SvgText(-self.wide/2 + vertical_line_width, self.high/2, "-10")
         self.value_min.attr_dominant_baseline = 'ideographic'
         self.value_min.attr_text_anchor = 'start'
         self.value_min.set_fill('white')
@@ -126,7 +126,7 @@ class SimpleVSI(gui.SvgGroup):
 
     def set_value(self, value):
         self.value = value
-        self.pointer_line.set_coords(self.wide/2, 0, -self.wide/2, self.value*(self.high/2)/10)
+        self.pointer_line.set_coords(self.wide/2, 0, -self.wide/2, -self.value*(self.high/2)/10)
         
 
 class TapeVertical(gui.SvgGroup):
