@@ -6,7 +6,7 @@ from remi import start, App
 import math
 import threading
 import time
-
+import base64
 
 class AsciiContainer(gui.Container):
     widget_layout_map = None
@@ -622,6 +622,12 @@ class PrimaryFlightDisplay(gui.Svg):
     def update_attitude(self):
         self.attitude_indicator.update_attitude()
 
+    def download(self, update_index=0):
+        self.attributes['xmlns']="http://www.w3.org/2000/svg"
+        content = gui.Widget.repr(self, None)
+        headers = {'Content-type': 'image/svg+xml'}
+        return [content, headers]
+
 
 class Application(App):
     color_flipper = None
@@ -636,6 +642,8 @@ class Application(App):
     def idle(self):
         #idle function called every update cycle
         #self.svg_group.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.rotation, self.movement)
+
+        self.pfd_container.style['background-image'] = "url('data:image/svg+xml;base64,%s')"%str(base64.b64encode(self.pfd.download()[0].encode()))[2:-1]
 
         #just an example
         battery_is_low = True
@@ -714,7 +722,9 @@ class Application(App):
         self.left3 =    gui.Label("left3",  style=_style)
         self.left4 =    gui.Label("left4",  style=_style)
 
-        self.main_container.append(self.pfd, "pfd")
+        self.pfd_container = gui.Widget(style={'position':'relative', 'background-repeat':'no-repeat', 'background-color':'black'})
+        
+        self.main_container.append(self.pfd_container, "pfd")
         self.main_container.append(self.t0, "t0")
         self.main_container.append(self.t1, "t1")
         self.main_container.append(self.t5, "t5")
@@ -778,4 +788,4 @@ class Application(App):
 
 
 if __name__ == "__main__":
-    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False, update_interval=0.2)
+    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False, update_interval=0.1)
