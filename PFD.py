@@ -79,32 +79,29 @@ class AsciiContainer(gui.Container):
         self.children[widget_key].css_top = self.widget_layout_map[widget_key]['top']
 
 
-class SimpleVSI(gui.SvgGroup):
+class SimpleVSI(gui.Svg):
     value = 0
 
-    def __init__(self, x_pos, y_pos, wide, high, *args, **kwargs):
+    def __init__(self, wide, high, *args, **kwargs):
         """ x_pos and y_pos are coordinates indicated by the pointer, generally at the center of the shown tape
         """
-        gui.SvgGroup.__init__(self, *args, **kwargs)
+        gui.Svg.__init__(self, *args, **kwargs)
 
         self.wide = wide
         self.high = high
 
-        self.attributes['transform'] = 'translate(%s %s)'%(x_pos, y_pos)
+        self.style['background-color'] = 'black'
 
-        #it is used a subcontainer in order to show only a part of the entire tape
-        self.subcontainer = gui.SvgSubcontainer(-self.wide, -self.high/2, wide, high)
-        self.subcontainer.set_viewbox(-self.wide/2, -self.high/2, wide, self.high)
-        self.append(self.subcontainer)
+        self.set_viewbox(-self.wide/2, -self.high/2, wide, self.high)
 
         vertical_line_width = self.wide/20
         scale_vertical_line = gui.SvgLine(-self.wide/2, -self.high/2, -self.wide/2, self.high)
         scale_vertical_line.set_stroke(vertical_line_width, 'lightgray')
-        self.subcontainer.append(scale_vertical_line)
+        self.append(scale_vertical_line)
 
         self.pointer_line = gui.SvgLine(self.wide/2, 0, -self.wide/2, self.value*(self.high/2))
         self.pointer_line.set_stroke(self.wide/20, 'lightgray')
-        self.subcontainer.append(self.pointer_line)
+        self.append(self.pointer_line)
 
         self.value_max = gui.SvgText(-self.wide/2 + vertical_line_width, -self.high/2, "10")
         self.value_max.attr_dominant_baseline = 'hanging'
@@ -113,7 +110,7 @@ class SimpleVSI(gui.SvgGroup):
         self.value_max.css_font_size = gui.to_pix(0.3*self.wide)
         self.value_max.css_font_weight = 'bolder'
         #self.value_max.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
-        self.subcontainer.append(self.value_max)
+        self.append(self.value_max)
 
         self.value_min = gui.SvgText(-self.wide/2 + vertical_line_width, self.high/2, "-10")
         self.value_min.attr_dominant_baseline = 'ideographic'
@@ -122,19 +119,17 @@ class SimpleVSI(gui.SvgGroup):
         self.value_min.css_font_size = gui.to_pix(0.3*self.wide)
         self.value_min.css_font_weight = 'bolder'
         #self.value_min.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
-        self.subcontainer.append(self.value_min)
+        self.append(self.value_min)
 
     def set_value(self, value):
         self.value = value
         self.pointer_line.set_coords(self.wide/2, 0, -self.wide/2, -self.value*(self.high/2)/10)
         
 
-class TapeVertical(gui.SvgGroup):
+class TapeVertical(gui.Svg):
     value = 0
     scale_length = 1000
     scale_length_visible = 100
-
-    subcontainer = None #contains the moving scale
     pointer_with_value_group = None #contains the static pointer with actual value
 
     wide = 0
@@ -151,16 +146,20 @@ class TapeVertical(gui.SvgGroup):
     tape_green_max = 0
 
 
-    def __init__(self, x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible, tape_white_min=0, tape_white_max=0, tape_green_min=0, tape_green_max=0, *args, **kwargs):
+    def __init__(self, wide, high, left_side, scale_length, scale_length_visible, tape_white_min=0, tape_white_max=0, tape_green_min=0, tape_green_max=0, *args, **kwargs):
         """ x_pos and y_pos are coordinates indicated by the pointer, generally at the center of the shown tape
         """
-        gui.SvgGroup.__init__(self, *args, **kwargs)
+        gui.Svg.__init__(self, *args, **kwargs)
 
         self.scale_length = scale_length
         self.scale_length_visible = scale_length_visible
 
         self.wide = wide
         self.high = high
+
+        self.style['background-color'] = 'black'
+
+        self.set_viewbox(-self.wide/2, -self.high/2, self.wide, self.high)
 
         self.indicator_size = self.wide*0.2
         self.left_side = left_side
@@ -171,13 +170,8 @@ class TapeVertical(gui.SvgGroup):
         self.tape_green_min = tape_green_min
         self.tape_green_max = tape_green_max
         
-        self.attributes['transform'] = 'translate(%s %s)'%(x_pos, y_pos)
-
-        #it is used a subcontainer in order to show only a part of the entire tape
-        self.subcontainer = gui.SvgSubcontainer(-wide if self.left_side else 0, -self.high/2, wide, high)
-        self.subcontainer.set_viewbox(-self.wide/2, -self.scale_length_visible/2, wide, self.scale_length_visible)
-        self.append(self.subcontainer)
-
+        self.set_viewbox(-self.wide/2, -self.scale_length_visible/2, wide, self.scale_length_visible)
+        
         self.group_indicator = gui.SvgGroup()
        
         self.group_scale = gui.SvgGroup()
@@ -185,7 +179,7 @@ class TapeVertical(gui.SvgGroup):
 
         self.group_indicator.append(self.group_scale)        
 
-        self.subcontainer.append(self.group_indicator)
+        self.append(self.group_indicator)
 
         
         #self.group_indicator.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
@@ -194,8 +188,8 @@ class TapeVertical(gui.SvgGroup):
         self.pointer.set_fill('black')
         self.pointer.set_stroke(0.02*self.scale_length_visible, 'red')
         direction = (-1 if self.left_side else 1)
-        pointer_x = 0 #(-self.wide if self.left_side else 0)
-        pointer_width = self.wide
+        pointer_x = self.wide/2 if self.left_side else -self.wide/2
+        pointer_width = self.wide#-0.02*self.scale_length_visible
         self.pointer.add_coord(pointer_x, 0)
         self.pointer.add_coord(pointer_x+((0.2*self.wide)*direction), 0.2*self.wide)
         self.pointer.add_coord(pointer_x+pointer_width*direction, 0.2*self.wide)
@@ -204,7 +198,8 @@ class TapeVertical(gui.SvgGroup):
         #self.pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.pointer)
 
-        self.pointer_value = gui.SvgText(((0-self.indicator_size) if self.left_side else (self.wide-0.05*self.wide)), 0, "%d"%(self.value%360))
+        self.pointer_value = gui.SvgText((self.wide/2-self.indicator_size) if self.left_side else (self.wide/2-0.05*self.wide), 0, "%d"%(self.value%360))
+        #self.pointer_value.attr_x = str((self.wide/2-self.indicator_size) if self.left_side else (self.wide/2-0.05*self.wide))
         self.pointer_value.attr_dominant_baseline = 'middle'
         self.pointer_value.attr_text_anchor = 'end' if self.left_side else 'end'
         self.pointer_value.set_fill('orange')
@@ -270,8 +265,10 @@ class TapeVertical(gui.SvgGroup):
                 
     def set_value(self, value):
         self.value = value
+        self.pointer.attributes['transform'] = 'translate(0 %s)'%(-value)
         self.pointer_value.set_text("%d"%self.value)
-        self.subcontainer.set_viewbox(-self.wide/2, -self.scale_length_visible/2 - self.value, self.wide, self.scale_length_visible)
+        self.pointer_value.attr_y = str(-value)
+        self.set_viewbox(-self.wide/2, -self.scale_length_visible/2 - self.value, self.wide, self.scale_length_visible)
         self.build_scale()
 
 
@@ -582,23 +579,13 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
         gui.Svg.__init__(self, *args, **kwargs)
-        self.attr_viewBox = "-72 -50 144 100"
-        background = gui.SvgRectangle(-100, -50, 200, 100)
+        self.attr_viewBox = "-50 -50 100 100"
+        background = gui.SvgRectangle(-50, -50, 100, 100)
         background.set_fill('black')
         self.append(background)
 
         self.attitude_indicator = AttitudeIndicator()
         self.append(self.attitude_indicator)
-
-        self.speed_indicator = TapeVertical(-51, 0, 20, 80, True, 999, 100, 12, 40, 25, 68) #three digits values
-        self.append(self.speed_indicator)
-
-        self.altitude_indicator = TapeVertical(51, 0, 20, 80, False, 9999, 100) #four digits values
-        self.append(self.altitude_indicator)
-
-        #x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible
-        self.VSI_indicator = SimpleVSI(85, 0, 10, 50)
-        self.append(self.VSI_indicator)
 
     def set_attitude_pitch(self, value):
         self.attitude_indicator.set_pitch(value)
@@ -608,15 +595,6 @@ class PrimaryFlightDisplay(gui.Svg):
 
     def set_attitude_roll(self, value):
         self.attitude_indicator.set_roll(value)
-
-    def set_altitude(self, value):
-        self.altitude_indicator.set_value(value)
-
-    def set_speed(self, value):
-        self.speed_indicator.set_value(value)
-
-    def set_VSI(self, value):
-        self.VSI_indicator.set_value(value)
 
     def update_attitude(self):
         self.attitude_indicator.update_attitude()
@@ -663,18 +641,18 @@ class Application(App):
 
         self.main_container.set_from_asciiart("""
         | t0                                                                                                     |
-        | left1        | pfd                                                                                     |
-        | left1        | pfd                                                                                     |
-        | left1        | pfd                                                                                     |
-        | left2        | pfd                                                                                     |
-        | left2        | pfd                                                                                     |
-        | left2        | pfd                                                                                     |
-        | left3        | pfd                                                                                     |
-        | left3        | pfd                                                                                     |
-        | left3        | pfd                                                                                     |
-        | left4        | pfd                                                                                     |
-        | left4        | pfd                                                                                     |
-        | left4        | pfd                                                                                     |
+        | left1           | g          | pfd                                         |altitude   | empty  |empty |
+        | left1           | speed      | pfd                                         |altitude   | empty  |empty |
+        | left1           | speed      | pfd                                         |altitude   | empty  |empty |
+        | left2           | speed      | pfd                                         |altitude   | vsi    |empty |
+        | left2           | speed      | pfd                                         |altitude   | vsi    |empty |
+        | left2           | speed      | pfd                                         |altitude   | vsi    |empty |
+        | left3           | speed      | pfd                                         |altitude   | vsi    |empty |
+        | left3           | speed      | pfd                                         |altitude   | vsi    |empty |
+        | left3           | speed      | pfd                                         |altitude   | vsi    |empty |
+        | left4           | speed      | pfd                                         |altitude   | empty  |empty |
+        | left4           | speed      | pfd                                         |altitude   | empty  |empty |
+        | left4           | speed      | pfd                                         |altitude   | empty  |empty |
         | s            | m                                   | t5                                 | t6           |
         | t1                                                                                                     |
         """, gap_horizontal=0, gap_vertical=0)
@@ -712,6 +690,16 @@ class Application(App):
         self.left2 =    gui.Label("left2",  style=_style)
         self.left3 =    gui.Label("left3",  style=_style)
         self.left4 =    gui.Label("left4",  style=_style)
+        self.g =        gui.Label("GS:29",  style=_style)
+
+        self.speed_indicator = TapeVertical(20, 80, True, 999, 100, 12, 40, 25, 68) #three digits values
+        self.main_container.append(self.speed_indicator, "speed")
+
+        self.altitude_indicator = TapeVertical(20, 80, False, 9999, 100) #four digits values
+        self.main_container.append(self.altitude_indicator, "altitude")
+
+        self.VSI_indicator = SimpleVSI(10, 50)
+        self.main_container.append(self.VSI_indicator, "vsi")
 
         self.main_container.append(self.pfd, "pfd")
         self.main_container.append(self.t0, "t0")
@@ -724,6 +712,7 @@ class Application(App):
         self.main_container.append(self.left2, "left2")
         self.main_container.append(self.left3, "left3")
         self.main_container.append(self.left4, "left4")
+        self.main_container.append(self.g, "g")
     
         # Here I start a parallel thread
         self.thread_alive_flag = True
@@ -753,9 +742,9 @@ class Application(App):
                 self.pfd.set_attitude_pitch(float(pitch))
                 self.pfd.set_attitude_orientation(float(yaw))
                 self.pfd.set_attitude_roll(float(roll))
-                self.pfd.set_altitude(float(alt))
-                self.pfd.set_speed(float(speed))
-                self.pfd.set_VSI( math.sin(math.radians(incrementa_number_for_testing%360))*10 )
+                self.altitude_indicator.set_value(float(alt))
+                self.speed_indicator.set_value(float(speed))
+                self.VSI_indicator.set_value( math.sin(math.radians(incrementa_number_for_testing%360))*10 )
                 self.pfd.update_attitude()
 
                 self.s.set_text("Fix3 HDOP: 0.7")
