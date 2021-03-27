@@ -605,7 +605,6 @@ class PrimaryFlightDisplay(gui.Svg):
 
     def set_attitude_orientation(self, value):
         self.attitude_indicator.set_orientation(value)
-        self.speed_indicator.set_value(value)
 
     def set_attitude_roll(self, value):
         self.attitude_indicator.set_roll(value)
