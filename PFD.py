@@ -7,6 +7,8 @@ import math
 import threading
 import time
 import base64
+import pyvips
+import io
 
 class AsciiContainer(gui.Container):
     widget_layout_map = None
@@ -48,10 +50,10 @@ class AsciiContainer(gui.Container):
                     #width is calculated in percent
                     # height is instead initialized at 1 and incremented by 1 each row the key is present
                     # at the end of algorithm the height will be converted in percent
-                    self.widget_layout_map[widget_key] = { 'width': "%.2f%%"%float(widget_width / (row_width) * 100.0 - gap_horizontal), 
+                    self.widget_layout_map[widget_key] = { 'width': float(widget_width / (row_width) * 100.0 - gap_horizontal), 
                                             'height':1, 
-                                            'top':"%.2f%%"%float(row_index / (layout_height_in_chars) * 100.0 + (gap_vertical/2.0)), 
-                                            'left':"%.2f%%"%float(left_value / (row_width) * 100.0 + (gap_horizontal/2.0))}
+                                            'top':float(row_index / (layout_height_in_chars) * 100.0 + (gap_vertical/2.0)), 
+                                            'left':float(left_value / (row_width) * 100.0 + (gap_horizontal/2.0))}
                 else:
                     self.widget_layout_map[widget_key]['height'] += 1
                 
@@ -60,7 +62,7 @@ class AsciiContainer(gui.Container):
 
         #converting height values in percent string
         for key in self.widget_layout_map.keys():
-            self.widget_layout_map[key]['height'] = "%.2f%%"%float(self.widget_layout_map[key]['height'] / (layout_height_in_chars) * 100.0 - gap_vertical) 
+            self.widget_layout_map[key]['height'] = float(self.widget_layout_map[key]['height'] / (layout_height_in_chars) * 100.0 - gap_vertical) 
 
         for key in self.widget_layout_map.keys():
             self.set_widget_layout(key)
@@ -74,9 +76,9 @@ class AsciiContainer(gui.Container):
         if not ((widget_key in self.children.keys() and (widget_key in self.widget_layout_map.keys()))):
             return
         self.children[widget_key].css_position = 'absolute'
-        self.children[widget_key].set_size(self.widget_layout_map[widget_key]['width'], self.widget_layout_map[widget_key]['height'])
-        self.children[widget_key].css_left = self.widget_layout_map[widget_key]['left']
-        self.children[widget_key].css_top = self.widget_layout_map[widget_key]['top']
+        self.children[widget_key].set_size("%.2f%%"%self.widget_layout_map[widget_key]['width'], "%.2f%%"%self.widget_layout_map[widget_key]['height'])
+        self.children[widget_key].css_left = "%.2f%%"%self.widget_layout_map[widget_key]['left']
+        self.children[widget_key].css_top = "%.2f%%"%self.widget_layout_map[widget_key]['top']
 
 
 class SimpleVSI(gui.SvgGroup):
@@ -583,6 +585,7 @@ class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
         gui.Svg.__init__(self, *args, **kwargs)
         self.attr_viewBox = "-72 -50 144 100"
+
         background = gui.SvgRectangle(-100, -50, 200, 100)
         background.set_fill('black')
         self.append(background)
@@ -622,11 +625,24 @@ class PrimaryFlightDisplay(gui.Svg):
     def update_attitude(self):
         self.attitude_indicator.update_attitude()
 
+    def set_image_size(self, w, h):
+        #these two parameters are required by pyvips to size the image correctly
+        self.attributes['width'] = str(w)
+        self.attributes['height'] = str(h)
+
     def download(self, update_index=0):
         self.attributes['xmlns']="http://www.w3.org/2000/svg"
         content = gui.Widget.repr(self, None)
-        headers = {'Content-type': 'image/svg+xml'}
-        return [content, headers]
+        
+        #headers = {'Content-type': 'image/svg+xml'}
+        headers = {'Content-type': 'image/png'}
+        x = pyvips.Image.svgload_buffer(content.encode('utf8'))
+        buf = x.write_to_buffer('.png')
+        #buf.seek(0)
+
+        #content = bb.read()
+
+        return [buf, headers]
 
 
 class Application(App):
@@ -643,7 +659,7 @@ class Application(App):
         #idle function called every update cycle
         #self.svg_group.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.rotation, self.movement)
 
-        self.pfd_container.style['background-image'] = "url('data:image/svg+xml;base64,%s')"%str(base64.b64encode(self.pfd.download()[0].encode()))[2:-1]
+        self.pfd_container.style['background-image'] = "url('data:image/png;base64,%s')"%str(base64.b64encode(self.pfd.download()[0]))[2:-1]
 
         #just an example
         battery_is_low = True
@@ -689,8 +705,6 @@ class Application(App):
         """, gap_horizontal=0, gap_vertical=0)
         
 
-        
-
         w = "95%"
         h = 30
         self.slider_pitch = gui.SpinBox(0, -90.0, 90.0, 2.0, width=w, height=h)
@@ -710,6 +724,8 @@ class Application(App):
         """
         h_divisions = 14.0
         self.pfd = PrimaryFlightDisplay(style={'position':'relative'})
+        self.pfd.set_image_size(640*self.main_container.widget_layout_map["pfd"]['width']/100, 360*self.main_container.widget_layout_map["pfd"]['height']/100)
+        
         _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black', 'font-size':'14px'}
         self.t0 =       gui.Label("T0",     style=_style)
         self.t1 =       gui.Label("T1",     style=_style)
@@ -722,8 +738,7 @@ class Application(App):
         self.left3 =    gui.Label("left3",  style=_style)
         self.left4 =    gui.Label("left4",  style=_style)
 
-        self.pfd_container = gui.Widget(style={'position':'relative', 'background-repeat':'no-repeat', 'background-color':'black'})
-        
+        self.pfd_container = gui.Widget(style={'position':'relative', 'background-repeat':'no-repeat', 'background-color':'black', 'background-size':'contain'})
         self.main_container.append(self.pfd_container, "pfd")
         self.main_container.append(self.t0, "t0")
         self.main_container.append(self.t1, "t1")
