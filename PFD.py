@@ -801,6 +801,10 @@ class Application(App):
         self.thread_alive_flag = False
         super(MyApp, self).on_close()
 
+    def onload(self, emitter):
+        """ WebPage Event that occurs on webpage loaded """
+        self.execute_javascript("""if (screen.width == 427 && screen.height == 240) {document.body.style.zoom="100%";}""")
+
 
 if __name__ == "__main__":
     start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False, update_interval=0.1)
