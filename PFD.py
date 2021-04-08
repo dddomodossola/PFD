@@ -206,7 +206,7 @@ class TapeVertical(gui.SvgGroup):
         #self.pointer.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
         self.append(self.pointer)
 
-        self.pointer_value = gui.SvgText(((0-self.indicator_size) if self.left_side else (self.wide-0.05*self.wide)), 0, "%d"%(self.value%360))
+        self.pointer_value = gui.SvgText(((0-self.indicator_size) if self.left_side else (self.wide-0.05*self.wide)), 0.3*self.wide/5*2, "%d"%(self.value%360))
         self.pointer_value.attr_dominant_baseline = 'middle'
         self.pointer_value.attr_text_anchor = 'end' if self.left_side else 'end'
         self.pointer_value.set_fill('orange')
@@ -250,6 +250,7 @@ class TapeVertical(gui.SvgGroup):
 
         indicator_x =  (self.wide/2-self.indicator_size) if self.left_side else (-self.wide/2+self.indicator_size)
         text_x = ((self.wide/2-self.indicator_size) if self.left_side else (self.wide/2-0.05*self.wide))
+        font_size = 0.28*self.wide
         content = ""
         for v in range(int(self.value-self.scale_length_visible/2), int(self.value+self.scale_length_visible/2 +1)):
             if v in labels.keys():
@@ -260,7 +261,7 @@ class TapeVertical(gui.SvgGroup):
                 """
                 content += """<line class="SvgLine" x1="%(x1)s" y1="%(y1)s" x2="%(x2)s" y2="%(y2)s" stroke="gray" stroke-width="0.6"></line>"""%{'x1':indicator_x, 'y1':y, 'x2':(self.wide/2 if self.left_side else -self.wide/2), 'y2':y}
 
-                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="white" style="dominant-baseline:middle;text-anchor:end;font-size:%(font)s;font-weight:bolder">%(text)s</text>"""%{'x':text_x, 'y':y, 'text':labels.get(v, ''), 'font':gui.to_pix(0.28*self.wide) }
+                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="white" style="dominant-baseline:middle;text-anchor:end;font-size:%(font)s;font-weight:bolder">%(text)s</text>"""%{'x':text_x, 'y':y+font_size/5.0*2.0, 'text':labels.get(v, ''), 'font':gui.to_pix(font_size) }
                 """txt = gui.SvgText(text_x, y, labels.get(v, ''))
                 txt.attr_dominant_baseline = 'middle'
                 txt.attr_text_anchor = 'end' if self.left_side else 'end'
@@ -325,11 +326,12 @@ class OrientationTapeHorizontal(gui.SvgGroup):
                 line.set_stroke(1, 'white')
                 self.group_orientation_indicator.append(line)
 
-                txt = gui.SvgText(x, y, labels.get(angle%360, ''))
+                font_size = 7*labels_size[angle%360]
+                txt = gui.SvgText(x, y + font_size, labels.get(angle%360, ''))
                 txt.attr_dominant_baseline = 'hanging'
                 txt.attr_text_anchor = 'middle'
                 txt.set_fill('white')
-                txt.css_font_size = gui.to_pix(7*labels_size[angle%360])
+                txt.css_font_size = gui.to_pix(font_size)
                 txt.css_font_weight = 'bolder'
                 self.group_orientation_indicator.append(txt)
         self.subcontainer.append(self.group_orientation_indicator)
@@ -414,6 +416,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         angle_min = -60
         angle_max = 60
         angle_step = 5
+        font_size = self.vw*0.04
         for angle in range(angle_min, angle_max+angle_step, angle_step):
             r = min_radius if (angle%10)==0 else mid_radius
             x_min = math.cos(math.radians(angle+90))*r
@@ -427,13 +430,13 @@ class AttitudeIndicator(gui.SvgSubcontainer):
             line.set_stroke(self.vw*0.005, 'white' if not hide_scale else 'transparent')
             self.append(line)
             if (angle%10)==0:
-                x_txt = math.cos(math.radians(angle+90))*(min_radius-0.025*self.vw)
-                y_txt = -math.sin(math.radians(angle+90))*(min_radius-0.025*self.vw)
+                x_txt = math.cos(math.radians(angle+90))*(min_radius-0.025*self.vw-font_size/5*4)
+                y_txt = -math.sin(math.radians(angle+90))*(min_radius-0.025*self.vw-font_size/5*4)
                 txt = gui.SvgText(x_txt, y_txt, str(abs(int(angle))))
                 txt.attr_dominant_baseline = 'hanging'
                 txt.attr_text_anchor = 'middle'
                 txt.set_fill('white' if not hide_scale else 'transparent')
-                txt.css_font_size = gui.to_pix(self.vw*0.04)
+                txt.css_font_size = gui.to_pix(font_size)
                 txt.css_font_weight = 'bolder'
                 self.append(txt)
 
@@ -459,7 +462,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.bank_indicator.add_coord(0.04*self.vw, (-0.06 + 0.025)*self.vw)
         self.bank_indicator.add_coord(-0.04*self.vw, (-0.06 + 0.025)*self.vw)
         self.group_roll_and_bank_angle_indicator.append(self.bank_indicator)
-        self.group_roll_and_bank_angle_indicator.attributes['transform'] = "translate(0 %s)"%(-0.3*self.vh)
+        self.group_roll_and_bank_angle_indicator.attributes['transform'] = "translate(0 %s)"%(-0.27*self.vh)
         self.group_roll_indicator.append(self.group_roll_and_bank_angle_indicator)
 
         #airplaine indicator is steady
@@ -507,7 +510,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         angle_min = -90
         angle_max = 90
         sign_sizes = [s3,   s1, s2,   s1]
-
+        font_size = 4.0
         content = ""
         for angle in range(int(angle_min*10), int(angle_max*10), int(step*10)):
             sign_size = sign_sizes[index%len(sign_sizes)]
@@ -528,8 +531,9 @@ class AttitudeIndicator(gui.SvgSubcontainer):
 
             #if it is a big sign, add also text
             if sign_size == s3:
-                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="rgba(255,255,255,0.5)" style="dominant-baseline:middle;text-anchor:start;font-size:4.0px">%(text)s</text>"""%{'x':sign_size/2, 'y':y, 'text':str(int(angle))}
-                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="rgba(255,255,255,0.5)" style="dominant-baseline:middle;text-anchor:end;font-size:4.0px">%(text)s</text>"""%{'x':-sign_size/2, 'y':y, 'text':str(int(angle))}
+
+                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="rgba(255,255,255,0.5)" style="text-anchor:start;font-size:4.0px">%(text)s</text>"""%{'x':sign_size/2, 'y':y+font_size/5.0*2.0, 'text':str(int(angle))}
+                content += """<text class="SvgText" x="%(x)s" y="%(y)s" fill="rgba(255,255,255,0.5)" style="text-anchor:end;font-size:4.0px">%(text)s</text>"""%{'x':-sign_size/2, 'y':y+font_size/5.0*2.0, 'text':str(int(angle))}
                 """
                 txt = gui.SvgText(sign_size/2, y, str(int(angle)))
                 txt.attr_dominant_baseline = 'middle'
@@ -585,6 +589,8 @@ class PrimaryFlightDisplay(gui.Svg):
     def __init__(self, *args, **kwargs):
         gui.Svg.__init__(self, *args, **kwargs)
         self.attr_viewBox = "-72 -50 144 100"
+
+        self.style['font-family'] = 'Consolas'
 
         background = gui.SvgRectangle(-100, -50, 200, 100)
         background.set_fill('black')
