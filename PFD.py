@@ -450,12 +450,13 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.roll_indicator.add_coord(0.04*self.vw, -0.06*self.vw)
         self.group_roll_and_bank_angle_indicator.append(self.roll_indicator)
         self.bank_indicator = gui.SvgPolygon(4)
-        self.bank_indicator.set_fill('transparent')
+        self.bank_indicator.set_fill('black')
         self.bank_indicator.set_stroke(1, 'black')
-        self.bank_indicator.add_coord(-0.04*self.vw, (-0.06 + 0.005)*self.vw)
-        self.bank_indicator.add_coord(0.04*self.vw, (-0.06 + 0.005)*self.vw)
-        self.bank_indicator.add_coord(0.04*self.vw, (-0.06 + 0.025)*self.vw)
-        self.bank_indicator.add_coord(-0.04*self.vw, (-0.06 + 0.025)*self.vw)
+        self.bank_indicator_width = 0.08
+        self.bank_indicator.add_coord(-(self.bank_indicator_width/2.0)*self.vw, (-0.06 + 0.005)*self.vw)
+        self.bank_indicator.add_coord((self.bank_indicator_width/2.0)*self.vw, (-0.06 + 0.005)*self.vw)
+        self.bank_indicator.add_coord((self.bank_indicator_width/2.0)*self.vw, (-0.06 + 0.025)*self.vw)
+        self.bank_indicator.add_coord(-(self.bank_indicator_width/2.0)*self.vw, (-0.06 + 0.025)*self.vw)
         self.group_roll_and_bank_angle_indicator.append(self.bank_indicator)
         self.group_roll_and_bank_angle_indicator.attributes['transform'] = "translate(0 %s)"%(-0.3*self.vh)
         self.group_roll_indicator.append(self.group_roll_and_bank_angle_indicator)
@@ -493,6 +494,8 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         #self.generate_orientation_indicator()
         self.orientation_tape = OrientationTapeHorizontal(0, 0.4*self.vh, 0.8*self.vw, 1.0*self.vh)
         self.append(self.orientation_tape)
+
+        self.set_skid_slip(0)
 
     def generate_pitch_indicator(self):
         self.group_pitch_indicator.empty()
@@ -554,6 +557,9 @@ class AttitudeIndicator(gui.SvgSubcontainer):
     def set_roll(self, roll):
         self.roll = roll
 
+    def set_skid_slip(self, value):
+        self.bank_indicator.attributes['transform'] = "translate(%s 0)"%(self.bank_indicator_width*(value/100.0)*self.vw)
+
     def update_attitude(self):
         if self.group_roll_indicator.css_visibility == 'visible' and abs(self.roll) > 90:
             self.group_roll_indicator.css_visibility = 'hidden'
@@ -608,6 +614,9 @@ class PrimaryFlightDisplay(gui.Svg):
 
     def set_attitude_roll(self, value):
         self.attitude_indicator.set_roll(value)
+
+    def set_skid_slip(self, value):
+        self.attitude_indicator.set_skid_slip(value)
 
     def set_altitude(self, value):
         self.altitude_indicator.set_value(value)
