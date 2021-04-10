@@ -1006,3 +1006,4 @@ class Application(App):
 
 if __name__ == "__main__":
     start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False, update_interval=0.2)
+# test
