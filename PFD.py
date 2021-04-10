@@ -105,7 +105,7 @@ class SimpleVSI(gui.SvgGroup):
         self.subcontainer.append(scale_vertical_line)
 
         self.pointer_line = gui.SvgLine(self.wide/2, 0, -self.wide/2, self.value*(self.high/2))
-        self.pointer_line.set_stroke(self.wide/20, 'lightgray')
+        self.pointer_line.set_stroke(self.wide/14, 'lightgray')
         self.subcontainer.append(self.pointer_line)
 
         self.value_max = gui.SvgText(-self.wide/2 + vertical_line_width, -self.high/2, "10")
@@ -209,7 +209,7 @@ class TapeVertical(gui.SvgGroup):
         self.pointer_value = gui.SvgText(((0-self.indicator_size) if self.left_side else (self.wide-0.05*self.wide)), 0.3*self.wide/5*2, "%d"%(self.value%360))
         self.pointer_value.attr_dominant_baseline = 'middle'
         self.pointer_value.attr_text_anchor = 'end' if self.left_side else 'end'
-        self.pointer_value.set_fill('orange')
+        self.pointer_value.set_fill('lime')
         self.pointer_value.css_font_size = gui.to_pix(0.3*self.wide)
         self.pointer_value.css_font_weight = 'bolder'
         #self.pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
@@ -614,7 +614,6 @@ class PrimaryFlightDisplay(gui.Svg):
 
     def set_attitude_orientation(self, value):
         self.attitude_indicator.set_orientation(value)
-        self.speed_indicator.set_value(value)
 
     def set_attitude_roll(self, value):
         self.attitude_indicator.set_roll(value)
@@ -811,7 +810,7 @@ class Application(App):
         self.pfd = PrimaryFlightDisplay(style={'position':'relative'})
         self.pfd.set_image_size(640*self.main_container.widget_layout_map["pfd"]['width']/100, 360*self.main_container.widget_layout_map["pfd"]['height']/100)
         
-        _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black', 'font-size':'14px'}
+        _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black', 'font-size':'16px'}
         self.t0 =       gui.Label("T0",     style=_style)
         self.t1 = gui.Label("WAITING FOR MAVLINK", style=_style)
         self.t5 = gui.Label("Voltage", style=_style)
