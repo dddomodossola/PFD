@@ -415,7 +415,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         max_radius = self.vw*0.5
         angle_min = -60
         angle_max = 60
-        angle_step = 5
+        angle_step = 20  #was 5
         font_size = self.vw*0.04
         for angle in range(angle_min, angle_max+angle_step, angle_step):
             r = min_radius if (angle%10)==0 else mid_radius
@@ -506,10 +506,10 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         s3 = 0.20*self.vw #max_sign_width
         index = 0
         radius = 1.0*self.vw
-        step = 2.5
+        step = 5 # was 2.5
         angle_min = -90
         angle_max = 90
-        sign_sizes = [s3,   s1, s2,   s1]
+        sign_sizes =  [s3, s2]  # was sign_sizes = [s3,   s1, s2,   s1]
         font_size = 4.0
         content = ""
         for angle in range(int(angle_min*10), int(angle_max*10), int(step*10)):
@@ -653,8 +653,7 @@ class PrimaryFlightDisplay(gui.Svg):
 
 class Application(App):
     color_flipper = None
-    standard_label_color = 'orange'
-
+    standard_label_color = 'white'
     thread_alive_flag = False
 
     INOP_condition = True
