@@ -103,7 +103,7 @@ class SimpleVSI(gui.SvgGroup):
         self.subcontainer.append(scale_vertical_line)
 
         self.pointer_line = gui.SvgLine(self.wide/2, 0, -self.wide/2, self.value*(self.high/2))
-        self.pointer_line.set_stroke(self.wide/20, 'lightgray')
+        self.pointer_line.set_stroke(self.wide / 14, 'lightgray')
         self.subcontainer.append(self.pointer_line)
 
         self.value_max = gui.SvgText(-self.wide/2 + vertical_line_width, -self.high/2, "10")
@@ -207,7 +207,7 @@ class TapeVertical(gui.SvgGroup):
         self.pointer_value = gui.SvgText(((0-self.indicator_size) if self.left_side else (self.wide-0.05*self.wide)), 0, "%d"%(self.value%360))
         self.pointer_value.attr_dominant_baseline = 'middle'
         self.pointer_value.attr_text_anchor = 'end' if self.left_side else 'end'
-        self.pointer_value.set_fill('orange')
+        self.pointer_value.set_fill('lime')
         self.pointer_value.css_font_size = gui.to_pix(0.3*self.wide)
         self.pointer_value.css_font_weight = 'bolder'
         #self.pointer_value.attributes['transform'] = 'translate(0 %s)'%(self.vh/2-0.11*self.vh)
@@ -411,7 +411,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         max_radius = self.vw*0.5
         angle_min = -60
         angle_max = 60
-        angle_step = 5
+        angle_step = 20  # was 5
         for angle in range(angle_min, angle_max+angle_step, angle_step):
             r = min_radius if (angle%10)==0 else mid_radius
             x_min = math.cos(math.radians(angle+90))*r
@@ -450,7 +450,7 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         self.roll_indicator.add_coord(0.04*self.vw, -0.06*self.vw)
         self.group_roll_and_bank_angle_indicator.append(self.roll_indicator)
         self.bank_indicator = gui.SvgPolygon(4)
-        self.bank_indicator.set_fill('black')
+        self.bank_indicator.set_fill('transparent')
         self.bank_indicator.set_stroke(1, 'black')
         self.bank_indicator_width = 0.08
         self.bank_indicator.add_coord(-(self.bank_indicator_width/2.0)*self.vw, (-0.06 + 0.005)*self.vw)
@@ -504,11 +504,10 @@ class AttitudeIndicator(gui.SvgSubcontainer):
         s3 = 0.20*self.vw #max_sign_width
         index = 0
         radius = 1.0*self.vw
-        step = 2.5
+        step = 5  # was 2.5
         angle_min = -90
         angle_max = 90
-        sign_sizes = [s3,   s1, s2,   s1]
-
+        sign_sizes = [s3, s2]  # was sign_sizes = [s3,   s1, s2,   s1]
         content = ""
         for angle in range(int(angle_min*10), int(angle_max*10), int(step*10)):
             sign_size = sign_sizes[index%len(sign_sizes)]
@@ -633,8 +632,7 @@ class PrimaryFlightDisplay(gui.Svg):
 
 class Application(App):
     color_flipper = None
-    standard_label_color = 'orange'
-
+    standard_label_color = 'white'
     thread_alive_flag = False
     INOP_condition = False
     INOP_sim = False
