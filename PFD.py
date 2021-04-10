@@ -636,24 +636,102 @@ class Application(App):
     standard_label_color = 'orange'
 
     thread_alive_flag = False
-
-    INOP_condition = True
-
+    INOP_condition = False
+    INOP_sim = False
+    INOP_telemetry_seen = False
+    INOP_alarm_time = time.time()  # the time of alarm start
+    INOP_alarm_limit = 30  # stop blinking after this many seconds
+    INOP_last_telemetry = time.time() - 10
     ab = 0.1
+    voltage_alarm = False
+    rpm = 0
+    rpm_alarm = False
+    rpm_alarm_time = time.time()  # the time of alarm start
+    rpm_alarm_limit = 30  # stop blinking after this many seconds
+    rpm_active = False
+    fix_alarm = False
+    vibration_alarm = False
+    mode_alarm = False
+    mode_change_time = time.time()
+    text_severity = 6  # 6=low severity  0=highest
+    text_alarm_sec = 2  # how long to flash
+    text_alarm_time = time.time()  # time when alarm started
 
     def idle(self):
         #idle function called every update cycle
-        #self.svg_group.attributes['transform'] = "rotate(%s 0 0) translate(0 %s)"%(self.rotation, self.movement)
 
-        #just an example
-        battery_is_low = True
-        if battery_is_low:
+        # Voltage alarm
+        if self.voltage_alarm:
             self.t5.css_color = self.color_flipper[0]
+            self.t5.css_background_color = 'red'
         else:
             self.t5.css_color = self.standard_label_color
+            del self.t5.css_background_color
 
-        if self.INOP_condition:
-            self.centering_container.css_background_color = {'red':'black', 'black':'red'}[self.centering_container.css_background_color]
+        # RPM alarm
+        if self.rpm_active and self.rpm < 500:  # low RPM / not running
+            self.rpm_alarm = True
+            self.rpm_alarm_time = time.time()
+            self.rpm_active = False
+        if not self.rpm_active and self.rpm > 500:
+            self.rpm_active = True
+            self.rpm_alarm = False
+        if self.rpm_alarm and time.time() - self.rpm_alarm_time > self.rpm_alarm_limit:
+            self.rpm_active = False
+            self.rpm_alarm = False
+
+        if self.rpm_alarm:
+            self.t6.css_color = self.color_flipper[0]
+            self.t6.css_background_color = 'red'
+        else:
+            self.t6.css_color = self.standard_label_color
+            del self.t6.css_background_color
+        # GNSS Fix alarm
+        if self.fix_alarm:
+            self.s.css_color = self.color_flipper[0]
+            self.s.css_background_color = 'red'
+        else:
+            self.s.css_color = self.standard_label_color
+            del self.s.css_background_color
+        # Mode change awareness
+        if time.time() - self.mode_change_time < 2:
+            self.m.css_color = self.color_flipper[0]
+            self.m.css_background_color = 'green'
+        else:
+            self.m.css_color = self.standard_label_color
+            del self.m.css_background_color
+        # Vibration alarm
+        if self.vibration_alarm:
+            self.left3.css_color = self.color_flipper[0]
+            self.left3.css_background_color = 'red'
+        else:
+            self.left3.css_color = self.standard_label_color
+            del self.left3.css_background_color
+
+        # Display using text severity
+        if self.text_severity < 6 and time.time() - self.text_alarm_time > self.text_alarm_sec:
+            self.t1.css_background_color = 'green'
+            if self.text_severity < 4:
+                self.t1.css_color = self.color_flipper[0]
+                self.t1.css_background_color = 'red'
+        else:
+            self.t1.css_color = self.standard_label_color
+            del self.t1.css_background_color
+
+        # Notify of telemetry loss
+        if time.time() - self.INOP_last_telemetry < 2:
+            self.INOP_condition = False
+            self.INOP_telemetry_seen = True
+        else:
+            if self.INOP_telemetry_seen: self.INOP_condition = True
+
+        if self.INOP_condition and time.time() - self.INOP_last_telemetry > self.INOP_alarm_limit:
+            self.INOP_condition = False
+            self.INOP_telemetry_seen = False
+
+        if self.INOP_condition or self.INOP_sim:
+            self.centering_container.css_background_color = {'red': 'black', 'black': 'red'}[
+                self.centering_container.css_background_color]
         else:
             self.centering_container.css_background_color = 'black'
 
@@ -710,17 +788,17 @@ class Application(App):
         """
         h_divisions = 14.0
         self.pfd = PrimaryFlightDisplay(style={'position':'relative'})
-        _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black', 'font-size':'14px'}
+        _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black', 'font-size':'16px'}
         self.t0 =       gui.Label("T0",     style=_style)
-        self.t1 =       gui.Label("T1",     style=_style)
-        self.t5 =       gui.Label("T5",     style=_style)
-        self.t6 =       gui.Label("T6",     style=_style)
-        self.s =        gui.Label("S",      style=_style)
-        self.m =        gui.Label("M",      style=_style)
-        self.left1 =    gui.Label("left1",  style=_style)
-        self.left2 =    gui.Label("left2",  style=_style)
-        self.left3 =    gui.Label("left3",  style=_style)
-        self.left4 =    gui.Label("left4",  style=_style)
+        self.t1 = gui.Label("WAITING FOR MAVLINK", style=_style)
+        self.t5 = gui.Label("Voltage", style=_style)
+        self.t6 = gui.Label("RPM", style=_style)
+        self.s = gui.Label("GNSS", style=_style)
+        self.m = gui.Label("MODE", style=_style)
+        self.left1 = gui.Label("", style=_style)
+        self.left2 = gui.Label("", style=_style)
+        self.left3 = gui.Label("", style=_style)
+        self.left4 = gui.Label("", style=_style)
 
         self.main_container.append(self.pfd, "pfd")
         self.main_container.append(self.t0, "t0")
@@ -743,17 +821,130 @@ class Application(App):
         return self.centering_container
 
     def my_threaded_function(self):
+        testmsg = [[6, "Mission: 1 WP"],
+                   [4, "Throttle failsafe on"],
+                   [4, "Failsafe. Short event on: type=1/reason=3"],
+                   [4, "Failsafe. Long event on: type=2/reason=3"],
+                   [1, "123456789012345678901234567890123456789012345678901234567890ABCDEFGH"],
+                   [4, "Failsafe. Long event off: reason=3"],
+                   [6, "ArduPlane V4.0.6 (036ad450)"],
+                   [6, "ChibiOS: d4fce84e"],
+                   [6, "CubeBlack 003D0043 32385108 32373737"],
+                   [6, "Throttle disarmed"],
+                   [6, "RCOut: PWM:1-12"],
+                   [6, "Ground start"],
+                   [1, "Beginning INS calibration. Do not move plane"],
+                   [6, "Calibrating barometer"],
+                   [6, "Barometer 1 calibration complete"],
+                   [6, "Barometer 2 calibration complete"],
+                   [6, "Airspeed calibration started"],
+                   [6, "Ground start complete"],
+                   [2, "PreArm: radio Failsafe On"],
+                   [4, "Throttle failsafe off"],
+                   [6, "GPS 1: detected as u-blox at 115200 baud"],
+                   [6, "EKF2 IMU0 initial yaw alignment complete"],
+                   [6, "EKF2 IMU1 initial yaw alignment complete"],
+                   [6, "Airspeed 1 calibrated"],
+                   [6, "EKF2 IMU1 tilt alignment complete"],
+                   [6, "EKF2 IMU0 tilt alignment complete"],
+                   [6, "EKF2 IMU0 origin set"],
+                   [6, "EKF2 IMU1 origin set"],
+                   [6, "GPS: u-blox 1 saving config"],
+                   [6, "u-blox 1 HW: 00080000 SW: EXT CORE 3.01 (d080e3)"],
+                   [6, "EKF2 IMU0 is using GPS"],
+                   [6, "EKF2 IMU1 is using GPS"],
+                   [6, "Throttle armed"],
+                   [6, "Flight plan received"],
+                   [2, "EKF Variance"],
+                   [4, "GPS Glitch"],
+                   [4, "GPS Glitch cleared"],
+                   [6, "Mission: 1 WP"],
+                   [6, "EKF2 IMU0 switching to compass 1"],
+                   [6, "EKF2 IMU1 switching to compass 1"],
+                   [6, "Reached waypoint #1 dist 29m"],
+                   [6, "Mission: 2 WP"],
+                   [6, "Reached waypoint #2 dist 30m"],
+                   [6, "Mission: 3 WP"]]
+
+        mode_array_test = ["MANUAL", "CIRCLE", "STABILIZE", "TRAINING", "ACRO", "FLY_BY_WIRE_A", "FLY_BY_WIRE_B",
+                           "CRUISE", "AUTOTUNE", "AUTO", "RTL", "LOITER", "TAKEOFF", "AVOID_ADSB", "GUIDED",
+                           "INITIALISING", "QSTABILIZE", "QHOVER", "QLOITER", "QLAND", "QRTL", "QAUTOTUNE", "QACRO"]
+
         incrementa_number_for_testing = 0
+        t1_text = ""
+        t1_ptr = 0
+        m_ptr = 0
+        yaw = 0
+        m = 0
+        mode_last = -1
+        time_for_text = time.time()
+        time_for_mode = time.time()
+
         while self.thread_alive_flag:
             #calculations
+            yaw = yaw - 3
+            if yaw < 0:
+                yaw = 360
             self.ab +=0.5
             if self.ab > 70: self.ab=-70
 
+            # text simulation
+            # horizontal space for max 68 chars with 16 px font
+            if time.time() - time_for_text > 3:  # time to change text
+
+                time_for_text = time.time()
+                # fetch new message
+                t1_text = testmsg[t1_ptr][1]
+                self.text_severity = testmsg[t1_ptr][0]
+                t1_ptr += 1
+                if t1_ptr == len(testmsg):
+                    t1_ptr = 0
+
+            # mode simulation
+            if time.time() - time_for_mode > 10:  # time to change text
+                time_for_mode = time.time()
+                # fetch new message
+                m = mode_array_test[m_ptr]
+                if mode_last != m_ptr:
+                    mode_last = m_ptr
+                    self.mode_change_time = time.time()
+
+                m_ptr += 1
+                if m_ptr == len(mode_array_test):
+                    m_ptr = 0
+
             pitch=self.ab
-            yaw=self.ab*2
             roll=self.ab
             alt=abs(self.ab*1.5+400)
             speed=abs(self.ab)
+
+            # trigger some test alarms
+            if alt > 290 and alt < 310:
+                self.voltage_alarm = True
+            else:
+                self.voltage_alarm = False
+
+            if alt > 320 and alt < 340:
+                self.mode_alarm = True
+            else:
+                self.mode_alarm = False
+
+            if alt > 360 and alt < 380:
+                self.rpm_alarm = True
+                self.INOP_sim = True
+            else:
+                self.rpm_alarm = False
+                self.INOP_sim = False
+
+            if alt > 400 and alt < 420:
+                self.fix_alarm = True
+            else:
+                self.fix_alarm = False
+
+            if alt > 440 and alt < 460:
+                self.vibration_alarm = True
+            else:
+                self.vibration_alarm = False
 
             """ WIDGETS MUST BE UPDATED in UPDATE_LOCK CONTEXT
                     to prevent concurrent thread access on gui elements
@@ -764,16 +955,18 @@ class Application(App):
                 self.pfd.set_attitude_roll(float(roll))
                 self.pfd.set_altitude(float(alt))
                 self.pfd.set_speed(float(speed))
-                self.pfd.set_VSI( math.sin(math.radians(incrementa_number_for_testing%360))*10 )
+                self.pfd.set_VSI((speed / 3.3) - 10)
                 self.pfd.update_attitude()
 
-                self.s.set_text("Fix3 HDOP: 0.7")
-                self.m.set_text("STABILIZED")
-                self.t1.set_text("pitch" + str(pitch) + " roll" + str(roll))
-                self.left1.set_text("Gen:   25.5v")
-                self.left2.set_text("TESTING_LONG_STRING")
-                self.left3.set_text("Next line \n here")
+                self.s.set_text("Sat:19 T:3")
+                self.m.set_text(str(mode_array_test[m_ptr]))
+                self.t1.set_text(t1_text)
+                self.left1.set_text("GS: 29.2")
+                self.left2.set_text("wind\ndir: 154\nspd: 5.2")
+                self.left3.set_text("Vibrations:\nx:6 y:10 z:12")
+                self.left4.set_text("\nThr: 32 %")
                 self.t5.set_text("Batt: 23.2V")
+                self.t6.set_text("5476 RPM")
 
             incrementa_number_for_testing += 1
             time.sleep(0.18)
