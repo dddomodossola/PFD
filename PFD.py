@@ -767,8 +767,8 @@ class Application(App):
         self.centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"absolute"})
 
         #to make a left margin or 50px (because of google glasses curvature), I have to calculate a new height
-        _w_margin  = 50
-        _h_margin = _w_margin*360/640
+        _w_margin  = 40
+        _h_margin = 0  # was _w_margin*360/640
         self.main_container = AsciiContainer(width=640-_w_margin, height=360-_h_margin, style={'background-color':'transparent', 'position':'relative', 'margin-left':gui.to_pix(_w_margin), 'margin-top':gui.to_pix(_h_margin/2)})
 
         self.main_container.set_from_asciiart("""
@@ -993,7 +993,7 @@ class Application(App):
                 self.t6.set_text("5476 RPM")
 
             incrementa_number_for_testing += 1
-            time.sleep(0.2)
+            time.sleep(0.18)
 
     def on_close(self):
         """ When app closes, the thread gets stopped
@@ -1003,8 +1003,7 @@ class Application(App):
 
     def onload(self, emitter):
         """ WebPage Event that occurs on webpage loaded """
-        self.execute_javascript("""if (screen.width == 427 && screen.height == 240) {document.body.style.zoom="100%";}""")
-
+        self.execute_javascript("""if (screen.width == 427 && screen.height == 240) {document.body.style.zoom="68%";}""")
 
 if __name__ == "__main__":
-    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False, update_interval=0.1)
+    start(Application, address='0.0.0.0', port=8080, multiple_instance=False, start_browser=True, debug=False, update_interval=0.2)
