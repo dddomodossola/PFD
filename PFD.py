@@ -590,7 +590,7 @@ class PrimaryFlightDisplay(gui.Svg):
         gui.Svg.__init__(self, *args, **kwargs)
         self.attr_viewBox = "-72 -50 144 100"
 
-        self.style['font-family'] = "Lucida Sans" #'Consolas'
+        self.style['font-family'] = "Sans" #'Consolas'
 
         background = gui.SvgRectangle(-90, -50, 180, 100)
         background.set_fill('black')
@@ -726,6 +726,7 @@ class Application(App):
         if self.vibration_alarm:
             self.left3.css_color = self.color_flipper[0]
             self.left3.css_background_color = 'red'
+            self.play_beep()
         else:
             self.left3.css_color = self.standard_label_color
             del self.left3.css_background_color
@@ -760,8 +761,25 @@ class Application(App):
         #swap colors each update
         self.color_flipper = [self.color_flipper[1],self.color_flipper[0]]
         
+    def play_beep(self):
+        """to avoid playing audio repeatedly in a short time, I handle a timeout"""
+        if time.time() - self.beep_timeout > 3: #the beep will be played with a minimum interval of 3 seconds
+            self.execute_javascript('beep.play();')
+            self.beep_timeout = time.time()
+
     def main(self):
         self.color_flipper = ['orange', 'white']
+
+
+        self.beep_timeout = time.time()
+        data = gui.load_resource('./sound.wav')
+        #adding sound to page javascript 
+        my_js_head = """
+            <script>var beep = new Audio("%s");</script>
+            """%data
+        #appending elements to page header
+        self.page.children['head'].add_child('js_sound_beep', my_js_head)
+
 
         self.centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"absolute"})
 
