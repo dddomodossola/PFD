@@ -590,7 +590,7 @@ class PrimaryFlightDisplay(gui.Svg):
         gui.Svg.__init__(self, *args, **kwargs)
         self.attr_viewBox = "-72 -50 144 100"
 
-        self.style['font-family'] = 'Consolas'
+        self.style['font-family'] = "Lucida Sans" #'Consolas'
 
         background = gui.SvgRectangle(-90, -50, 180, 100)
         background.set_fill('black')
