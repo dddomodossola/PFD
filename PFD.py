@@ -592,21 +592,21 @@ class PrimaryFlightDisplay(gui.Svg):
 
         self.style['font-family'] = 'Consolas'
 
-        background = gui.SvgRectangle(-100, -50, 200, 100)
+        background = gui.SvgRectangle(-90, -50, 180, 100)
         background.set_fill('black')
         self.append(background)
 
         self.attitude_indicator = AttitudeIndicator()
         self.append(self.attitude_indicator)
 
-        self.speed_indicator = TapeVertical(-51, 0, 20, 80, True, 999, 100, 12, 40, 25, 68) #three digits values
+        self.speed_indicator = TapeVertical(-50, 0, 20, 80, True, 999, 100, 12, 40, 25, 68) #three digits values
         self.append(self.speed_indicator)
 
-        self.altitude_indicator = TapeVertical(51, 0, 20, 80, False, 9999, 100) #four digits values
+        self.altitude_indicator = TapeVertical(50, 0, 20, 80, False, 9999, 100) #four digits values
         self.append(self.altitude_indicator)
 
         #x_pos, y_pos, wide, high, left_side, scale_length, scale_length_visible
-        self.VSI_indicator = SimpleVSI(85, 0, 10, 50)
+        self.VSI_indicator = SimpleVSI(81, 0, 10, 50)
         self.append(self.VSI_indicator)
 
     def set_attitude_pitch(self, value):
@@ -772,18 +772,18 @@ class Application(App):
 
         self.main_container.set_from_asciiart("""
         | t0                                                                                                     |
-        | left1        | pfd                                                                                     |
-        | left1        | pfd                                                                                     |
-        | left1        | pfd                                                                                     |
-        | left2        | pfd                                                                                     |
-        | left2        | pfd                                                                                     |
-        | left2        | pfd                                                                                     |
-        | left3        | pfd                                                                                     |
-        | left3        | pfd                                                                                     |
-        | left3        | pfd                                                                                     |
-        | left4        | pfd                                                                                     |
-        | left4        | pfd                                                                                     |
-        | left4        | pfd                                                                                     |
+        | left1                | pfd                                                                             |
+        | left1                | pfd                                                                             |
+        | left1                | pfd                                                                             |
+        | left2                | pfd                                                                             |
+        | left2                | pfd                                                                             |
+        | left2                | pfd                                                                             |
+        | left3                | pfd                                                                             |
+        | left3                | pfd                                                                             |
+        | left3                | pfd                                                                             |
+        | left4                | pfd                                                                             |
+        | left4                | pfd                                                                             |
+        | left4                | pfd                                                                             |
         | s            | m                                   | t5                                 | t6           |
         | t1                                                                                                     |
         """, gap_horizontal=0, gap_vertical=0)
@@ -808,7 +808,7 @@ class Application(App):
         """
         h_divisions = 14.0
         self.pfd = PrimaryFlightDisplay(style={'position':'relative'})
-        self.pfd.set_image_size(640*self.main_container.widget_layout_map["pfd"]['width']/100, 360*self.main_container.widget_layout_map["pfd"]['height']/100)
+        self.pfd.set_image_size((640.0-_w_margin)*self.main_container.widget_layout_map["pfd"]['width']/100.0, (360.0 - _h_margin)*self.main_container.widget_layout_map["pfd"]['height']/100.0)
         
         _style = {'text-align':'center', 'color':self.standard_label_color, 'outline':'1px solid black', 'font-size':'16px'}
         self.t0 =       gui.Label("T0",     style=_style)
