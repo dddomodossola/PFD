@@ -764,24 +764,17 @@ class Application(App):
     def play_beep(self):
         """to avoid playing audio repeatedly in a short time, I handle a timeout"""
         if time.time() - self.beep_timeout > 3: #the beep will be played with a minimum interval of 3 seconds
-            self.execute_javascript('beep.play();')
+            self.execute_javascript('document.getElementById("audio").play();')
             self.beep_timeout = time.time()
 
     def main(self):
         self.color_flipper = ['orange', 'white']
 
-
         self.beep_timeout = time.time()
         data = gui.load_resource('./sound.wav')
-        #adding sound to page javascript 
-        my_js_head = """
-            <script>var beep = new Audio("%s");</script>
-            """%data
-        #appending elements to page header
-        self.page.children['head'].add_child('js_sound_beep', my_js_head)
-
-
+        
         self.centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"absolute"})
+        self.centering_container.add_child("audio", """<audio id="audio" style="visibility:hidden;height:0px;width:0px;position:absolute" controls><source src="%s" /></audio>"""%data)
 
         #to make a left margin or 50px (because of google glasses curvature), I have to calculate a new height
         _w_margin  = 40
