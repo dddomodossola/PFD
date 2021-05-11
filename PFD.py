@@ -650,6 +650,37 @@ class PrimaryFlightDisplay(gui.Svg):
         return [buf, headers]
 
 
+class Settings(gui.VBox):
+    check_example_setting = None
+    text_area_example_setting = None
+    dropdown_example_setting = None
+
+    def __init__(self, *args, **kwargs):
+        gui.VBox.__init__(self, *args, **kwargs)
+        self.css_justify_content='flex-start'
+        self.check_example_setting = gui.CheckBoxLabel("a checkbox", style={'background-color':'transparent', 'color':'white'})
+
+        self.text_area_example_setting = gui.TextInput(style={'background-color':'transparent', 'color':'white'})
+
+        self.dropdown_example_setting = gui.DropDown(style={'background-color':'transparent', 'color':'white'})
+        self.dropdown_example_setting.append(gui.DropDownItem("red"))
+        self.dropdown_example_setting.append(gui.DropDownItem("yellow"))
+        self.dropdown_example_setting.set_value("red")
+
+        self.append_setting("CHECKBOX", self.check_example_setting)
+        self.append_setting("TEXTAREA", self.text_area_example_setting)
+        self.append_setting("ALARM COLOR DROPDOWN", self.dropdown_example_setting)
+
+    def append_setting(self, label, widget):
+        self.append( gui.HBox(children=[gui.Label(label, style={'margin-right':'10px'}), widget], style={'background-color':'transparent', 'color':'white'}) )
+
+    def toggle_visibility(self):
+        if self.css_display == 'none':
+            self.css_display = 'flex'
+        else:
+            self.css_display = 'none'
+
+
 class Application(App):
     color_flipper = None
     standard_label_color = 'white'
@@ -681,11 +712,12 @@ class Application(App):
 
         self.pfd_container.style['background-image'] = "url('data:image/png;base64,%s')"%str(base64.b64encode(self.pfd.download()[0]))[2:-1]
 
+        alarm_color = self.settings_panel.dropdown_example_setting.get_value() #'red'
 
         # Voltage alarm
         if self.voltage_alarm:
             self.t5.css_color = self.color_flipper[0]
-            self.t5.css_background_color = 'red'
+            self.t5.css_background_color = alarm_color
         else:
             self.t5.css_color = self.standard_label_color
             del self.t5.css_background_color
@@ -704,14 +736,14 @@ class Application(App):
 
         if self.rpm_alarm:
             self.t6.css_color = self.color_flipper[0]
-            self.t6.css_background_color = 'red'
+            self.t6.css_background_color = alarm_color
         else:
             self.t6.css_color = self.standard_label_color
             del self.t6.css_background_color
         # GNSS Fix alarm
         if self.fix_alarm:
             self.s.css_color = self.color_flipper[0]
-            self.s.css_background_color = 'red'
+            self.s.css_background_color = alarm_color
         else:
             self.s.css_color = self.standard_label_color
             del self.s.css_background_color
@@ -725,7 +757,7 @@ class Application(App):
         # Vibration alarm
         if self.vibration_alarm:
             self.left3.css_color = self.color_flipper[0]
-            self.left3.css_background_color = 'red'
+            self.left3.css_background_color = alarm_color
             self.play_beep()
         else:
             self.left3.css_color = self.standard_label_color
@@ -736,7 +768,7 @@ class Application(App):
             self.t1.css_background_color = 'green'
             if self.text_severity < 4:
                 self.t1.css_color = self.color_flipper[0]
-                self.t1.css_background_color = 'red'
+                self.t1.css_background_color = alarm_color
         else:
             self.t1.css_color = self.standard_label_color
             del self.t1.css_background_color
@@ -773,12 +805,16 @@ class Application(App):
         self.beep_timeout = time.time()
         data = gui.load_resource('./sound.wav')
         
-        self.centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"absolute"})
+        self.centering_container = gui.Container(width=640, height=360, style={'background-color':'black', "position":"absolute", 'overflow':'show'})
         self.centering_container.add_child("audio", """<audio id="audio" style="visibility:hidden;height:0px;width:0px;position:absolute" controls><source src="%s" /></audio>"""%data)
+
+        self.settings_panel = Settings(width="100%", height=360, style={'background-color':'black'})
+        self.settings_panel.toggle_visibility()
 
         #to make a left margin or 50px (because of google glasses curvature), I have to calculate a new height
         _w_margin  = 40
         _h_margin = 0  # was _w_margin*360/640
+
         self.main_container = AsciiContainer(width=640-_w_margin, height=360-_h_margin, style={'background-color':'transparent', 'position':'relative', 'margin-left':gui.to_pix(_w_margin), 'margin-top':gui.to_pix(_h_margin/2)})
 
         self.main_container.set_from_asciiart("""
@@ -846,13 +882,20 @@ class Application(App):
         self.main_container.append(self.left3, "left3")
         self.main_container.append(self.left4, "left4")
     
+        self.t1.onclick.do(self.on_t1_clicked)
+
         # Here I start a parallel thread
         self.thread_alive_flag = True
         t = threading.Thread(target=self.my_threaded_function)
         t.start()
 
         self.centering_container.append(self.main_container)
+        self.centering_container.append(self.settings_panel)
         return self.centering_container
+
+    def on_t1_clicked(self, emitter):
+        self.play_beep()
+        self.settings_panel.toggle_visibility()
 
     def my_threaded_function(self):
         testmsg = [[6, "Mission: 1 WP"],
