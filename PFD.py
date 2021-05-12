@@ -658,6 +658,10 @@ class Settings(gui.VBox):
     def __init__(self, *args, **kwargs):
         gui.VBox.__init__(self, *args, **kwargs)
         self.css_justify_content='flex-start'
+
+        self.bt_init_sound = gui.Button("Init Sound")
+        self.bt_init_sound.attributes['onclick'] = '''document.getElementById('audio').play();'''
+
         self.check_example_setting = gui.CheckBoxLabel("a checkbox", style={'background-color':'transparent', 'color':'white'})
 
         self.text_area_example_setting = gui.TextInput(style={'background-color':'transparent', 'color':'white'})
@@ -667,6 +671,7 @@ class Settings(gui.VBox):
         self.dropdown_example_setting.append(gui.DropDownItem("yellow"))
         self.dropdown_example_setting.set_value("red")
 
+        self.append_setting("Initialize Sound", self.bt_init_sound)
         self.append_setting("CHECKBOX", self.check_example_setting)
         self.append_setting("TEXTAREA", self.text_area_example_setting)
         self.append_setting("ALARM COLOR DROPDOWN", self.dropdown_example_setting)
@@ -894,7 +899,6 @@ class Application(App):
         return self.centering_container
 
     def on_t1_clicked(self, emitter):
-        self.play_beep()
         self.settings_panel.toggle_visibility()
 
     def my_threaded_function(self):
